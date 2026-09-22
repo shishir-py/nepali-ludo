@@ -55,18 +55,23 @@ jobs:
         run: flutter create --platforms=android --org=com.nepali --project-name=nepali_ludo .
 
       - name: Patch regenerated build.gradle (fix flutter.versionCode)
-        # Newer flutter create in some templates still emits the older
-        # `flutter.versionCode` syntax that the Flutter Gradle plugin no
-        # longer exposes. Replace those two lines with hardcoded values.
         run: |
           set -e
           BG=android/app/build.gradle
-          echo "--- BEFORE ---" && sed -n '20,40p' "$BG"
           sed -i 's|versionCode = flutter.versionCode|versionCode = 1|' "$BG"
           sed -i 's|versionName = flutter.versionName|versionName = "1.0.0"|' "$BG"
-          # Also make sure minSdk is high enough for file_picker
           sed -i 's|minSdk = flutter.minSdkVersion|minSdk = 21|' "$BG"
-          echo "--- AFTER ---" && sed -n '20,40p' "$BG"
+
+      - name: Ensure AndroidX is enabled in gradle.properties
+        # Required by audioplayers, file_picker and every modern Flutter plugin.
+        run: |
+          set -e
+          GP=android/gradle.properties
+          touch "$GP"
+          grep -q "^android.useAndroidX=" "$GP" || echo "android.useAndroidX=true" >> "$GP"
+          grep -q "^android.enableJetifier=" "$GP" || echo "android.enableJetifier=true" >> "$GP"
+          grep -q "^org.gradle.jvmargs=" "$GP" || echo "org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=2G -XX:+HeapDumpOnOutOfMemoryError" >> "$GP"
+          echo "--- gradle.properties ---" && cat "$GP"
 
       - name: Get dependencies
         run: flutter pub get
