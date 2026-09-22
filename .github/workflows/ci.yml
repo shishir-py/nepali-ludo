@@ -12,39 +12,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
-
       - name: Get dependencies
         run: flutter pub get
-
       - name: Verify formatting (warning only)
         run: dart format --output=none --set-exit-if-changed lib/ test/
         continue-on-error: true
-
       - name: Analyze code
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
-
       - name: Run tests
         run: flutter test --coverage
-        continue-on-error: true
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          file: coverage/lcov.info
         continue-on-error: true
 
   build-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
-    # Build the APK even if lint/tests had warnings — beta release path.
     steps:
       - uses: actions/checkout@v4
 
@@ -62,9 +50,23 @@ jobs:
           cache: true
 
       - name: Regenerate Android scaffolding
-        # Ensures gradle wrapper, icons, and platform files are complete.
-        # Only touches android/ ; lib/ and pubspec.yaml are left alone.
+        # Fills in missing gradle wrapper jar, icons, gradle.properties, etc.
+        # It will overwrite android/app/build.gradle — we fix that in the next step.
         run: flutter create --platforms=android --org=com.nepali --project-name=nepali_ludo .
+
+      - name: Patch regenerated build.gradle (fix flutter.versionCode)
+        # Newer flutter create in some templates still emits the older
+        # `flutter.versionCode` syntax that the Flutter Gradle plugin no
+        # longer exposes. Replace those two lines with hardcoded values.
+        run: |
+          set -e
+          BG=android/app/build.gradle
+          echo "--- BEFORE ---" && sed -n '20,40p' "$BG"
+          sed -i 's|versionCode = flutter.versionCode|versionCode = 1|' "$BG"
+          sed -i 's|versionName = flutter.versionName|versionName = "1.0.0"|' "$BG"
+          # Also make sure minSdk is high enough for file_picker
+          sed -i 's|minSdk = flutter.minSdkVersion|minSdk = 21|' "$BG"
+          echo "--- AFTER ---" && sed -n '20,40p' "$BG"
 
       - name: Get dependencies
         run: flutter pub get
