@@ -61,6 +61,11 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Regenerate Android scaffolding
+        # Ensures gradle wrapper, icons, and platform files are complete.
+        # Only touches android/ ; lib/ and pubspec.yaml are left alone.
+        run: flutter create --platforms=android --org=com.nepali --project-name=nepali_ludo .
+
       - name: Get dependencies
         run: flutter pub get
 
