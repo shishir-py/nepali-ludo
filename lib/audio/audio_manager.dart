@@ -38,12 +38,17 @@ class AudioManager {
   }
 
   /// Called from main.dart at startup.
-  void setSoundEnabled(bool v) => _settings = _settings.copyWith(soundEnabled: v);
+  void setSoundEnabled(bool v) =>
+      _settings = _settings.copyWith(soundEnabled: v);
   void setMusicEnabled(bool v) {
     _settings = _settings.copyWith(musicEnabled: v);
-    if (!v) _musicPlayer.stop();
-    else _startBackgroundMusic();
+    if (!v) {
+      _musicPlayer.stop();
+    } else {
+      _startBackgroundMusic();
+    }
   }
+
   void setVolume(double v) {
     _settings = _settings.copyWith(volume: v);
     _sfxPlayer.setVolume(v);
@@ -119,7 +124,9 @@ class AudioManager {
   }
 
   Future<void> stopPreview() async {
-    try { await _previewPlayer.stop(); } catch (_) {}
+    try {
+      await _previewPlayer.stop();
+    } catch (_) {}
   }
 
   Future<SoundOption> _resolve(SoundEvent event) async {
@@ -138,15 +145,15 @@ class AudioManager {
 
   // ─── Public event triggers (called from GameProvider) ──────────
 
-  Future<void> playDiceRoll()  => _playEvent(SoundEvent.dice);
+  Future<void> playDiceRoll() => _playEvent(SoundEvent.dice);
   Future<void> playTokenMove() => _playEvent(SoundEvent.move);
-  Future<void> playKill()      => _playEvent(SoundEvent.kill);
-  Future<void> playCapture()   => playKill();              // legacy alias
-  Future<void> playSafe()      => _playEvent(SoundEvent.safe);
-  Future<void> playSix()       => _playEvent(SoundEvent.six);
-  Future<void> playWin()       => _playEvent(SoundEvent.win);
+  Future<void> playKill() => _playEvent(SoundEvent.kill);
+  Future<void> playCapture() => playKill(); // legacy alias
+  Future<void> playSafe() => _playEvent(SoundEvent.safe);
+  Future<void> playSix() => _playEvent(SoundEvent.six);
+  Future<void> playWin() => _playEvent(SoundEvent.win);
   Future<void> playButtonTap() => _playEvent(SoundEvent.tap);
-  Future<void> playReaction()  => _playEvent(SoundEvent.reaction);
+  Future<void> playReaction() => _playEvent(SoundEvent.reaction);
   Future<void> playTokenHome() => _playEvent(SoundEvent.home);
 
   void dispose() {

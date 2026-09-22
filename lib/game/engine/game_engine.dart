@@ -51,8 +51,7 @@ class GameEngine {
     state = state.copyWith(
       lastDiceValue: value,
       diceRolled: true,
-      consecutiveSixes:
-          value == 6 ? state.consecutiveSixes + 1 : 0,
+      consecutiveSixes: value == 6 ? state.consecutiveSixes + 1 : 0,
     );
 
     _emit(GameEvent(
@@ -189,15 +188,17 @@ class GameEngine {
       _emit(winEv);
 
       if (state.activePlayers <= 1) {
-        state = state.copyWith(phase: GamePhase.finished, winnerIndex: playerIndex);
-        _emit(GameEvent(type: GameEventType.gameOver, playerIndex: playerIndex));
+        state =
+            state.copyWith(phase: GamePhase.finished, winnerIndex: playerIndex);
+        _emit(
+            GameEvent(type: GameEventType.gameOver, playerIndex: playerIndex));
         return produced;
       }
     }
 
     // Decide next turn.
-    final didCapture = produced.any((e) => e.type == GameEventType.tokenCaptured);
-    final finishedToken = produced.any((e) => e.type == GameEventType.tokenFinished);
+    final didCapture =
+        produced.any((e) => e.type == GameEventType.tokenCaptured);
     final extraTurn = diceValue == 6 || didCapture;
 
     if (extraTurn && state.consecutiveSixes < 3) {
@@ -216,8 +217,7 @@ class GameEngine {
 
   /// Returns the list of tokens that can legally be moved for [diceValue].
   List<Token> validMoves(int playerIndex, int diceValue) {
-    return state.players[playerIndex]
-        .tokens
+    return state.players[playerIndex].tokens
         .where((t) => t.canMove(diceValue))
         .toList();
   }
@@ -279,7 +279,8 @@ class GameEngine {
     int next = (state.currentPlayerIndex + 1) % state.players.length;
     // Skip players who have won.
     int tries = 0;
-    while (state.players[next].allTokensFinished && tries < state.players.length) {
+    while (
+        state.players[next].allTokensFinished && tries < state.players.length) {
       next = (next + 1) % state.players.length;
       tries++;
     }
@@ -311,15 +312,19 @@ class GameEngine {
   // ─────────────────────────────────────────────────────────────
 
   Map<String, dynamic> toJson() => {
-        'players': state.players.map((p) => {
-          'index': p.index,
-          'name': p.name,
-          'type': p.type.name,
-          'difficulty': p.difficulty.name,
-          'hasWon': p.hasWon,
-          'finishOrder': p.finishOrder,
-          'tokens': p.tokens.map((t) => {'id': t.id, 'position': t.position}).toList(),
-        }).toList(),
+        'players': state.players
+            .map((p) => {
+                  'index': p.index,
+                  'name': p.name,
+                  'type': p.type.name,
+                  'difficulty': p.difficulty.name,
+                  'hasWon': p.hasWon,
+                  'finishOrder': p.finishOrder,
+                  'tokens': p.tokens
+                      .map((t) => {'id': t.id, 'position': t.position})
+                      .toList(),
+                })
+            .toList(),
         'currentPlayerIndex': state.currentPlayerIndex,
         'lastDiceValue': state.lastDiceValue,
         'diceRolled': state.diceRolled,

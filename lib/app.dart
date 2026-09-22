@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'game/game_provider.dart';
@@ -21,9 +20,8 @@ class NepaliLudoApp extends StatelessWidget {
           // Apply Noto Sans Devanagari as default font
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(
-                MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.3),
-              ),
+              textScaler: MediaQuery.textScalerOf(context)
+                  .clamp(minScaleFactor: 0.8, maxScaleFactor: 1.3),
             ),
             child: child!,
           );

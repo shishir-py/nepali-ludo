@@ -26,7 +26,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.myStats)),
+      appBar: AppBar(title: const Text(S.myStats)),
       backgroundColor: NepaliColors.background,
       body: _stats == null
           ? const Center(child: CircularProgressIndicator())
@@ -39,7 +39,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   _statCard('💔', S.gamesLost, '${_stats!.gamesLost}'),
                   _statCard('📈', S.winRate,
                       '${(_stats!.winRate * 100).toStringAsFixed(1)}%'),
-                  _statCard('💥', S.tokensCaptured, '${_stats!.tokensCaptured}'),
+                  _statCard(
+                      '💥', S.tokensCaptured, '${_stats!.tokensCaptured}'),
                   _statCard('🎲', S.sixesRolled, '${_stats!.sixesRolled}'),
                   _statCard('🔥', S.bestStreak, '${_stats!.bestStreak}'),
                   _statCard('🤖', S.vsAiGames, '${_stats!.vsAiGames}'),

@@ -16,7 +16,7 @@ class GameProvider extends ChangeNotifier {
   GameEngine? _engine;
   final AiEngine _ai = AiEngine();
   StreamSubscription<GameEvent>? _sub;
-  AppSettings _settings = AppSettings();
+  AppSettings _settings = const AppSettings();
 
   // Latest event for announcements / reactions
   GameEvent? lastEvent;

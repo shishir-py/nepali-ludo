@@ -108,8 +108,7 @@ class SoundPreferences {
     required String filePath,
   }) async {
     final existing = await listCustom(event);
-    final updated =
-        existing.where((o) => o.source != filePath).toList();
+    final updated = existing.where((o) => o.source != filePath).toList();
     await _saveCustom(event, updated);
 
     final activeId = await getChoiceId(event);

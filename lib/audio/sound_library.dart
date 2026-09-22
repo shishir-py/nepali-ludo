@@ -18,49 +18,60 @@
 /// Missing files are silently skipped, so you can start with only a few
 /// variants and add more over time. To change how many slots each event
 /// exposes, edit [_variantCount] below.
+library;
 
 enum SoundEvent {
-  dice,        // dice roll
-  move,        // token move
-  kill,        // token captured
-  safe,        // landed on safe cell
-  six,         // rolled a 6
-  home,        // token reached home column
-  win,         // player won
-  tap,         // button tap
-  reaction,    // reaction sent
-  music,       // background music
+  dice, // dice roll
+  move, // token move
+  kill, // token captured
+  safe, // landed on safe cell
+  six, // rolled a 6
+  home, // token reached home column
+  win, // player won
+  tap, // button tap
+  reaction, // reaction sent
+  music, // background music
 }
 
 /// How many numbered variants each event exposes in the picker.
 /// Files that don't exist on disk are simply hidden.
 const Map<SoundEvent, int> _variantCount = {
-  SoundEvent.dice:     6,
-  SoundEvent.move:     4,
-  SoundEvent.kill:    10,   // ← user asked for 10 kill sounds
-  SoundEvent.safe:    10,   // ← user asked for 10 safe sounds
-  SoundEvent.six:      6,
-  SoundEvent.home:     4,
-  SoundEvent.win:      6,
-  SoundEvent.tap:      3,
+  SoundEvent.dice: 6,
+  SoundEvent.move: 4,
+  SoundEvent.kill: 10, // ← user asked for 10 kill sounds
+  SoundEvent.safe: 10, // ← user asked for 10 safe sounds
+  SoundEvent.six: 6,
+  SoundEvent.home: 4,
+  SoundEvent.win: 6,
+  SoundEvent.tap: 3,
   SoundEvent.reaction: 4,
-  SoundEvent.music:    5,
+  SoundEvent.music: 5,
 };
 
 extension SoundEventLabel on SoundEvent {
   /// Nepali label shown in the picker.
   String get label {
     switch (this) {
-      case SoundEvent.dice:     return '🎲 पासा घुमाउँदा';
-      case SoundEvent.move:     return '🚶 Token सर्दा';
-      case SoundEvent.kill:     return '💥 काट्ने आवाज';
-      case SoundEvent.safe:     return '🛡️ सुरक्षित सेल';
-      case SoundEvent.six:      return '🎯 छक्का!';
-      case SoundEvent.home:     return '🏠 घर पुग्दा';
-      case SoundEvent.win:      return '🏆 जित';
-      case SoundEvent.tap:      return '👆 बटन थिच्दा';
-      case SoundEvent.reaction: return '😊 प्रतिक्रिया';
-      case SoundEvent.music:    return '🎵 पृष्ठभूमि संगीत';
+      case SoundEvent.dice:
+        return '🎲 पासा घुमाउँदा';
+      case SoundEvent.move:
+        return '🚶 Token सर्दा';
+      case SoundEvent.kill:
+        return '💥 काट्ने आवाज';
+      case SoundEvent.safe:
+        return '🛡️ सुरक्षित सेल';
+      case SoundEvent.six:
+        return '🎯 छक्का!';
+      case SoundEvent.home:
+        return '🏠 घर पुग्दा';
+      case SoundEvent.win:
+        return '🏆 जित';
+      case SoundEvent.tap:
+        return '👆 बटन थिच्दा';
+      case SoundEvent.reaction:
+        return '😊 प्रतिक्रिया';
+      case SoundEvent.music:
+        return '🎵 पृष्ठभूमि संगीत';
     }
   }
 
@@ -99,7 +110,8 @@ class SoundOption {
   /// Unique identifier persisted in SharedPreferences.
   String get id => isAsset ? 'asset:$source' : 'file:$source';
 
-  factory SoundOption.custom({required String label, required String filePath}) {
+  factory SoundOption.custom(
+      {required String label, required String filePath}) {
     return SoundOption(label: label, source: filePath, isAsset: false);
   }
 
@@ -153,16 +165,26 @@ extension _SoundEventShortLabel on SoundEvent {
   /// Shorter label used inside the variant name ("काट #3").
   String get _shortLabel {
     switch (this) {
-      case SoundEvent.dice:     return 'पासा';
-      case SoundEvent.move:     return 'सर्ने';
-      case SoundEvent.kill:     return 'काट';
-      case SoundEvent.safe:     return 'सुरक्षित';
-      case SoundEvent.six:      return 'छक्का';
-      case SoundEvent.home:     return 'घर';
-      case SoundEvent.win:      return 'जित';
-      case SoundEvent.tap:      return 'क्लिक';
-      case SoundEvent.reaction: return 'प्रतिक्रिया';
-      case SoundEvent.music:    return 'संगीत';
+      case SoundEvent.dice:
+        return 'पासा';
+      case SoundEvent.move:
+        return 'सर्ने';
+      case SoundEvent.kill:
+        return 'काट';
+      case SoundEvent.safe:
+        return 'सुरक्षित';
+      case SoundEvent.six:
+        return 'छक्का';
+      case SoundEvent.home:
+        return 'घर';
+      case SoundEvent.win:
+        return 'जित';
+      case SoundEvent.tap:
+        return 'क्लिक';
+      case SoundEvent.reaction:
+        return 'प्रतिक्रिया';
+      case SoundEvent.music:
+        return 'संगीत';
     }
   }
 }

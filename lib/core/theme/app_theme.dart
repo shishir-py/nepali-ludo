@@ -42,21 +42,31 @@ class NepaliColors {
 
   static Color playerColor(int index) {
     switch (index) {
-      case 0: return redPlayer;
-      case 1: return greenPlayer;
-      case 2: return yellowPlayer;
-      case 3: return bluePlayer;
-      default: return Colors.grey;
+      case 0:
+        return redPlayer;
+      case 1:
+        return greenPlayer;
+      case 2:
+        return yellowPlayer;
+      case 3:
+        return bluePlayer;
+      default:
+        return Colors.grey;
     }
   }
 
   static Color playerColorLight(int index) {
     switch (index) {
-      case 0: return redPlayer.withOpacity(0.25);
-      case 1: return greenPlayer.withOpacity(0.25);
-      case 2: return yellowPlayer.withOpacity(0.25);
-      case 3: return bluePlayer.withOpacity(0.25);
-      default: return Colors.grey.withOpacity(0.2);
+      case 0:
+        return redPlayer.withValues(alpha: 0.25);
+      case 1:
+        return greenPlayer.withValues(alpha: 0.25);
+      case 2:
+        return yellowPlayer.withValues(alpha: 0.25);
+      case 3:
+        return bluePlayer.withValues(alpha: 0.25);
+      default:
+        return Colors.grey.withValues(alpha: 0.2);
     }
   }
 }
@@ -69,11 +79,9 @@ class AppTheme {
         seedColor: NepaliColors.primary,
         primary: NepaliColors.primary,
         secondary: NepaliColors.gold,
-        background: NepaliColors.background,
         surface: NepaliColors.surface,
         onPrimary: Colors.white,
         onSecondary: NepaliColors.textPrimary,
-        onBackground: NepaliColors.textPrimary,
         onSurface: NepaliColors.textPrimary,
       ),
       scaffoldBackgroundColor: NepaliColors.background,
@@ -109,7 +117,8 @@ class AppTheme {
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: NepaliColors.gold.withOpacity(0.4), width: 1),
+          side: BorderSide(
+              color: NepaliColors.gold.withValues(alpha: 0.4), width: 1),
         ),
       ),
     );
@@ -118,13 +127,20 @@ class AppTheme {
   static TextTheme _textTheme(TextTheme base) {
     final nepali = GoogleFonts.notoSansDevanagariTextTheme(base);
     return nepali.copyWith(
-      displayLarge: nepali.displayLarge?.copyWith(color: NepaliColors.textPrimary, fontWeight: FontWeight.bold),
-      displayMedium: nepali.displayMedium?.copyWith(color: NepaliColors.textPrimary, fontWeight: FontWeight.bold),
-      headlineLarge: nepali.headlineLarge?.copyWith(color: NepaliColors.textPrimary, fontWeight: FontWeight.bold),
-      headlineMedium: nepali.headlineMedium?.copyWith(color: NepaliColors.primary, fontWeight: FontWeight.w700),
-      titleLarge: nepali.titleLarge?.copyWith(color: NepaliColors.textPrimary, fontWeight: FontWeight.w600),
-      bodyLarge: nepali.bodyLarge?.copyWith(color: NepaliColors.textPrimary, fontSize: 16),
-      bodyMedium: nepali.bodyMedium?.copyWith(color: NepaliColors.textSecondary, fontSize: 14),
+      displayLarge: nepali.displayLarge?.copyWith(
+          color: NepaliColors.textPrimary, fontWeight: FontWeight.bold),
+      displayMedium: nepali.displayMedium?.copyWith(
+          color: NepaliColors.textPrimary, fontWeight: FontWeight.bold),
+      headlineLarge: nepali.headlineLarge?.copyWith(
+          color: NepaliColors.textPrimary, fontWeight: FontWeight.bold),
+      headlineMedium: nepali.headlineMedium
+          ?.copyWith(color: NepaliColors.primary, fontWeight: FontWeight.w700),
+      titleLarge: nepali.titleLarge?.copyWith(
+          color: NepaliColors.textPrimary, fontWeight: FontWeight.w600),
+      bodyLarge: nepali.bodyLarge
+          ?.copyWith(color: NepaliColors.textPrimary, fontSize: 16),
+      bodyMedium: nepali.bodyMedium
+          ?.copyWith(color: NepaliColors.textSecondary, fontSize: 14),
       labelLarge: nepali.labelLarge?.copyWith(fontWeight: FontWeight.w600),
     );
   }

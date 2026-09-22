@@ -44,9 +44,9 @@ class SoundSettingsScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('सबै आवाज रिसेट गर्ने?'),
-        content: const Text(
-            'सबै आवाज पूर्वनिर्धारित (variant #1) मा फर्किन्छन्। '
-            'अपलोड गरिएका कस्टम आवाजहरू पनि मेटिनेछन्।'),
+        content:
+            const Text('सबै आवाज पूर्वनिर्धारित (variant #1) मा फर्किन्छन्। '
+                'अपलोड गरिएका कस्टम आवाजहरू पनि मेटिनेछन्।'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -102,7 +102,7 @@ class _EventRowState extends State<_EventRow> {
         _current == null
             ? 'लोड हुँदै…'
             : 'चयनित: ${_current!.label}${_current!.isAsset ? "" : "  (कस्टम)"}',
-        style: TextStyle(fontSize: 12, color: NepaliColors.textSecondary),
+        style: const TextStyle(fontSize: 12, color: NepaliColors.textSecondary),
       ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () async {
@@ -172,8 +172,8 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
           const SizedBox(height: 8),
           _sectionHeader('कस्टम आवाजहरू (${custom.length})'),
           if (custom.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(20),
+            const Padding(
+              padding: EdgeInsets.all(20),
               child: Text(
                 'अझै कुनै कस्टम आवाज छैन। तलको बटनबाट थप्नुहोस्।',
                 style: TextStyle(color: NepaliColors.textSecondary),
@@ -196,7 +196,7 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
         child: Text(
           text,
-          style: TextStyle(
+          style: const TextStyle(
             color: NepaliColors.primary,
             fontWeight: FontWeight.bold,
             fontSize: 13,
@@ -211,7 +211,7 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: isSelected
-            ? NepaliColors.primary.withOpacity(0.08)
+            ? NepaliColors.primary.withValues(alpha: 0.08)
             : NepaliColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -221,7 +221,7 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
       ),
       child: ListTile(
         leading: IconButton(
-          icon: Icon(Icons.play_arrow_rounded,
+          icon: const Icon(Icons.play_arrow_rounded,
               color: NepaliColors.primary, size: 32),
           tooltip: 'सुन्नुहोस्',
           onPressed: () => AudioManager.instance.preview(option),
@@ -229,9 +229,7 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
         title: Text(option.label,
             style: const TextStyle(fontWeight: FontWeight.w500)),
         subtitle: Text(
-          option.isAsset
-              ? option.source
-              : p.basename(option.source),
+          option.isAsset ? option.source : p.basename(option.source),
           style: const TextStyle(fontSize: 11),
           overflow: TextOverflow.ellipsis,
         ),
@@ -239,7 +237,7 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isSelected)
-              Icon(Icons.check_circle, color: NepaliColors.primary),
+              const Icon(Icons.check_circle, color: NepaliColors.primary),
             if (deletable)
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -334,7 +332,9 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
     if (ok != true) return;
 
     // Best-effort file removal.
-    try { await File(option.source).delete(); } catch (_) {}
+    try {
+      await File(option.source).delete();
+    } catch (_) {}
     await SoundPreferences.removeCustom(
       event: widget.event,
       filePath: option.source,

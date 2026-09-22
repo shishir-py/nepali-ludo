@@ -1,30 +1,30 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Smoke test for the app shell: the splash screen is the first thing the
+// app shows, so rendering it exercises the theme, fonts and l10n strings.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:nepali_ludo/main.dart';
+import 'package:nepali_ludo/core/theme/app_theme.dart';
+import 'package:nepali_ludo/l10n/strings.dart';
+import 'package:nepali_ludo/ui/screens/splash_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('splash screen shows the app name and tagline',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light,
+      home: const SplashScreen(),
+    ));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text(S.appName), findsOneWidget);
+    expect(find.text(S.appTagline), findsOneWidget);
+
+    // The splash schedules a 3s timer that navigates to the home screen.
+    // Tear the tree down first so it fires against an unmounted state
+    // (the home screen needs Hive, which isn't initialised in tests),
+    // then let it elapse so no timer is left pending.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 4));
   });
 }

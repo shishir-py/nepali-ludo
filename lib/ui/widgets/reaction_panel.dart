@@ -18,9 +18,9 @@ class ReactionBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: NepaliColors.primary.withOpacity(0.92),
+          color: NepaliColors.primary.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8)],
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
         ),
         child: Text(
           text,
@@ -49,7 +49,8 @@ class ReactionPanel extends StatelessWidget {
         color: NepaliColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(
-          top: BorderSide(color: NepaliColors.gold.withOpacity(0.4), width: 1.5),
+          top: BorderSide(
+              color: NepaliColors.gold.withValues(alpha: 0.4), width: 1.5),
         ),
       ),
       padding: const EdgeInsets.all(16),
@@ -109,16 +110,16 @@ class ReactionPanel extends StatelessWidget {
                     Navigator.pop(context);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: NepaliColors.primaryLight.withOpacity(0.1),
+                      color: NepaliColors.primaryLight.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: NepaliColors.primary.withOpacity(0.25)),
+                          color: NepaliColors.primary.withValues(alpha: 0.25)),
                     ),
-                    child: Text(r,
-                        style: Theme.of(context).textTheme.bodyMedium),
+                    child:
+                        Text(r, style: Theme.of(context).textTheme.bodyMedium),
                   ),
                 );
               },

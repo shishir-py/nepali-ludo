@@ -4,6 +4,7 @@ import 'token.dart';
 part 'player.g.dart';
 
 enum PlayerType { human, ai }
+
 enum AiDifficulty { easy, normal, hard }
 
 @HiveType(typeId: 1)
@@ -37,11 +38,15 @@ class Player {
     List<Token>? tokens,
     this.hasWon = false,
     this.finishOrder = 0,
-  }) : tokens = tokens ??
-            List.generate(4, (i) => Token(id: i, position: -1));
+  }) : tokens = tokens ?? List.generate(4, (i) => Token(id: i, position: -1));
 
   static const List<String> colorNames = ['रातो', 'हरियो', 'पहेँलो', 'नीलो'];
-  static const List<String> colorHex = ['#E53935', '#43A047', '#FDD835', '#1E88E5'];
+  static const List<String> colorHex = [
+    '#E53935',
+    '#43A047',
+    '#FDD835',
+    '#1E88E5'
+  ];
 
   String get colorName => colorNames[index];
 
@@ -72,7 +77,11 @@ class Player {
       name: name ?? this.name,
       type: type ?? this.type,
       difficulty: difficulty ?? this.difficulty,
-      tokens: tokens ?? this.tokens.map((t) => Token(id: t.id, position: t.position)).toList(),
+      tokens: tokens ??
+          this
+              .tokens
+              .map((t) => Token(id: t.id, position: t.position))
+              .toList(),
       hasWon: hasWon ?? this.hasWon,
       finishOrder: finishOrder ?? this.finishOrder,
     );

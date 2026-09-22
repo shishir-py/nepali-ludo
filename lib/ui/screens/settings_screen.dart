@@ -38,7 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.settings)),
+      appBar: AppBar(title: const Text(S.settings)),
       backgroundColor: NepaliColors.background,
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -70,7 +70,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'प्रतिक्रिया पठाउँदा आवाज',
             value: _settings.reactionsEnabled,
             onChanged: (v) {
-              setState(() => _settings = _settings.copyWith(reactionsEnabled: v));
+              setState(
+                  () => _settings = _settings.copyWith(reactionsEnabled: v));
               _save();
             },
           ),
@@ -88,12 +89,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'आवाज छान्नुहोस्',
             subtitle: 'प्रत्येक घटनाको लागि आफ्नै आवाज तोक्नुहोस्',
             onTap: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const SoundSettingsScreen()));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const SoundSettingsScreen()));
             },
           ),
           const SizedBox(height: 8),
-
           _sectionHeader('📳 सूचना'),
           _switchTile(
             icon: Icons.vibration_rounded,
@@ -101,7 +103,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'खेलका महत्त्वपूर्ण क्षणहरूमा कम्पन',
             value: _settings.vibrationEnabled,
             onChanged: (v) {
-              setState(() => _settings = _settings.copyWith(vibrationEnabled: v));
+              setState(
+                  () => _settings = _settings.copyWith(vibrationEnabled: v));
               _save();
             },
           ),
@@ -111,12 +114,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'छक्का!, काटियो!, घर पुग्यो! जस्ता सन्देश',
             value: _settings.showAnnouncements,
             onChanged: (v) {
-              setState(() => _settings = _settings.copyWith(showAnnouncements: v));
+              setState(
+                  () => _settings = _settings.copyWith(showAnnouncements: v));
               _save();
             },
           ),
           const SizedBox(height: 8),
-
           _sectionHeader('🎮 खेल'),
           _dropdownTile(
             icon: Icons.smart_toy_rounded,
@@ -145,13 +148,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             onChanged: (v) {
               if (v != null) {
-                setState(() => _settings = _settings.copyWith(animationQuality: v));
+                setState(
+                    () => _settings = _settings.copyWith(animationQuality: v));
                 _save();
               }
             },
           ),
           const SizedBox(height: 8),
-
           _sectionHeader('ℹ️ बारेमा'),
           _infoTile(
             icon: Icons.info_outline_rounded,
@@ -177,7 +180,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.only(top: 8, bottom: 8, left: 4),
       child: Text(
         title,
-        style: TextStyle(
+        style: const TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 14,
           color: NepaliColors.primary,
@@ -200,10 +203,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         secondary: Icon(icon, color: NepaliColors.primary),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
         subtitle: Text(subtitle,
-            style: TextStyle(fontSize: 12, color: NepaliColors.textSecondary)),
+            style: const TextStyle(
+                fontSize: 12, color: NepaliColors.textSecondary)),
         value: value,
         onChanged: onChanged,
-        activeColor: NepaliColors.primary,
+        activeThumbColor: NepaliColors.primary,
       ),
     );
   }
@@ -229,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: const TextStyle(fontWeight: FontWeight.w500)),
                 const Spacer(),
                 Text('${(value * 100).round()}%',
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: NepaliColors.primary,
                         fontWeight: FontWeight.bold)),
               ],
@@ -292,7 +296,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         subtitle: Text(subtitle,
-            style: TextStyle(fontSize: 12, color: NepaliColors.textSecondary)),
+            style: const TextStyle(
+                fontSize: 12, color: NepaliColors.textSecondary)),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
       ),
@@ -320,11 +325,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('तथ्याङ्क मेटाउने?'),
-        content: const Text('यो कार्य पूर्ववत गर्न सकिँदैन। के तपाईं निश्चित हुनुहुन्छ?'),
+        content: const Text(
+            'यो कार्य पूर्ववत गर्न सकिँदैन। के तपाईं निश्चित हुनुहुन्छ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(S.cancel),
+            child: const Text(S.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

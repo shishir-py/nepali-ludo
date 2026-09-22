@@ -39,7 +39,8 @@ class GameStorage {
       final map = jsonDecode(raw) as Map<String, dynamic>;
       final players = (map['players'] as List).map((p) {
         final tokens = (p['tokens'] as List)
-            .map((t) => Token(id: t['id'] as int, position: t['position'] as int))
+            .map((t) =>
+                Token(id: t['id'] as int, position: t['position'] as int))
             .toList();
         return Player(
           index: p['index'] as int,
@@ -122,37 +123,45 @@ class PlayerStats {
     gamesWon++;
     currentStreak++;
     if (currentStreak > bestStreak) bestStreak = currentStreak;
-    if (vsAi) vsAiGames++; else vsHumanGames++;
+    if (vsAi) {
+      vsAiGames++;
+    } else {
+      vsHumanGames++;
+    }
   }
 
   void recordLoss({bool vsAi = false}) {
     gamesPlayed++;
     gamesLost++;
     currentStreak = 0;
-    if (vsAi) vsAiGames++; else vsHumanGames++;
+    if (vsAi) {
+      vsAiGames++;
+    } else {
+      vsHumanGames++;
+    }
   }
 
   Map<String, dynamic> toJson() => {
-    'gamesPlayed': gamesPlayed,
-    'gamesWon': gamesWon,
-    'gamesLost': gamesLost,
-    'tokensCaptured': tokensCaptured,
-    'sixesRolled': sixesRolled,
-    'vsAiGames': vsAiGames,
-    'vsHumanGames': vsHumanGames,
-    'currentStreak': currentStreak,
-    'bestStreak': bestStreak,
-  };
+        'gamesPlayed': gamesPlayed,
+        'gamesWon': gamesWon,
+        'gamesLost': gamesLost,
+        'tokensCaptured': tokensCaptured,
+        'sixesRolled': sixesRolled,
+        'vsAiGames': vsAiGames,
+        'vsHumanGames': vsHumanGames,
+        'currentStreak': currentStreak,
+        'bestStreak': bestStreak,
+      };
 
   factory PlayerStats.fromJson(Map<String, dynamic> json) => PlayerStats(
-    gamesPlayed: json['gamesPlayed'] ?? 0,
-    gamesWon: json['gamesWon'] ?? 0,
-    gamesLost: json['gamesLost'] ?? 0,
-    tokensCaptured: json['tokensCaptured'] ?? 0,
-    sixesRolled: json['sixesRolled'] ?? 0,
-    vsAiGames: json['vsAiGames'] ?? 0,
-    vsHumanGames: json['vsHumanGames'] ?? 0,
-    currentStreak: json['currentStreak'] ?? 0,
-    bestStreak: json['bestStreak'] ?? 0,
-  );
+        gamesPlayed: json['gamesPlayed'] ?? 0,
+        gamesWon: json['gamesWon'] ?? 0,
+        gamesLost: json['gamesLost'] ?? 0,
+        tokensCaptured: json['tokensCaptured'] ?? 0,
+        sixesRolled: json['sixesRolled'] ?? 0,
+        vsAiGames: json['vsAiGames'] ?? 0,
+        vsHumanGames: json['vsHumanGames'] ?? 0,
+        currentStreak: json['currentStreak'] ?? 0,
+        bestStreak: json['bestStreak'] ?? 0,
+      );
 }

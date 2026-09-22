@@ -52,8 +52,7 @@ class GameState {
   bool get isOver => phase == GamePhase.finished;
 
   /// Number of players still in the game (not yet finished all tokens).
-  int get activePlayers =>
-      players.where((p) => !p.allTokensFinished).length;
+  int get activePlayers => players.where((p) => !p.allTokensFinished).length;
 
   GameState copyWith({
     List<Player>? players,

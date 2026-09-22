@@ -27,13 +27,15 @@ class _GameScreenState extends State<GameScreen> {
     return Consumer<GameProvider>(
       builder: (context, game, _) {
         if (!game.hasGame) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
         }
 
         final state = game.state!;
 
         if (state.phase == GamePhase.finished) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _showWinDialog(context, state));
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => _showWinDialog(context, state));
         }
 
         return PopScope(
@@ -44,17 +46,32 @@ class _GameScreenState extends State<GameScreen> {
           child: Scaffold(
             backgroundColor: NepaliColors.background,
             body: SafeArea(
-              child: Column(
+              child: Stack(
                 children: [
-                  _buildTopBar(context, state, game),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: _buildGameLayout(context, state, game),
-                    ),
+                  Column(
+                    children: [
+                      _buildTopBar(context, state, game),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: _buildGameLayout(context, state, game),
+                        ),
+                      ),
+                      if (game.announcement != null)
+                        _buildAnnouncement(game.announcement!),
+                    ],
                   ),
-                  if (game.announcement != null)
-                    _buildAnnouncement(game.announcement!),
+                  // Reaction bubble from the player who last reacted.
+                  if (_activeReaction != null)
+                    Positioned(
+                      top: 72,
+                      left: 0,
+                      right: 0,
+                      child: ReactionBubble(
+                        text: _activeReaction!,
+                        isRight: _reactionPlayer == 1 || _reactionPlayer == 2,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -79,8 +96,7 @@ class _GameScreenState extends State<GameScreen> {
         Expanded(child: _buildBoard(context, state, game)),
         const SizedBox(height: 8),
         // Bottom players row
-        if (state.players.length > 2)
-          _buildPlayersRow(state, game, [3, 2]),
+        if (state.players.length > 2) _buildPlayersRow(state, game, [3, 2]),
         const SizedBox(height: 8),
         _buildControlBar(context, state, game),
       ],
@@ -107,7 +123,7 @@ class _GameScreenState extends State<GameScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isCurrent ? color.withOpacity(0.2) : Colors.transparent,
+        color: isCurrent ? color.withValues(alpha: 0.2) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCurrent ? color : Colors.transparent,
@@ -141,7 +157,7 @@ class _GameScreenState extends State<GameScreen> {
                 ),
                 Text(
                   '${player.tokens.where((t) => t.isFinished).length}/4 घर',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
                     color: NepaliColors.textSecondary,
                   ),
@@ -151,8 +167,7 @@ class _GameScreenState extends State<GameScreen> {
           ),
           if (isCurrent && !state.diceRolled && !game.currentPlayerIsAi)
             const Text('👉', style: TextStyle(fontSize: 16)),
-          if (player.hasWon)
-            Text('🏆', style: TextStyle(fontSize: 16)),
+          if (player.hasWon) const Text('🏆', style: TextStyle(fontSize: 16)),
         ],
       ),
     );
@@ -162,8 +177,7 @@ class _GameScreenState extends State<GameScreen> {
   // Board
   // ─────────────────────────────────────────────────────────────
 
-  Widget _buildBoard(
-      BuildContext context, GameState state, GameProvider game) {
+  Widget _buildBoard(BuildContext context, GameState state, GameProvider game) {
     final currentPlayer = state.currentPlayer;
     final highlightable = state.diceRolled && !game.currentPlayerIsAi
         ? currentPlayer.moveableTokens(state.lastDiceValue)
@@ -188,22 +202,14 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  void _handleBoardTap(
-      TapUpDetails details,
-      BuildContext context,
-      GameState state,
-      GameProvider game) {
+  void _handleBoardTap(TapUpDetails details, BuildContext context,
+      GameState state, GameProvider game) {
     if (!state.diceRolled || game.currentPlayerIsAi || game.isTokenMoving) {
       return;
     }
 
-    // Find which token was tapped based on board cell position.
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final boardSize = renderBox.size;
-    // Account for the Row/Expanded layout — find actual board bounds.
-    // We'll use a simpler approach: check all highlightable tokens.
+    // Tap coordinates aren't mapped to board cells; selection is driven by
+    // which tokens are legally moveable instead.
     final moveable = state.currentPlayer.moveableTokens(state.lastDiceValue);
     if (moveable.isEmpty) return;
 
@@ -217,14 +223,13 @@ class _GameScreenState extends State<GameScreen> {
     _showTokenSelectionDialog(context, moveable, game, state);
   }
 
-  void _showTokenSelectionDialog(
-      BuildContext context, List<Token> tokens, GameProvider game, GameState state) {
+  void _showTokenSelectionDialog(BuildContext context, List<Token> tokens,
+      GameProvider game, GameState state) {
     final color = NepaliColors.playerColor(state.currentPlayerIndex);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('कुन token सार्नुहुन्छ?',
-            style: TextStyle(color: color)),
+        title: Text('कुन token सार्नुहुन्छ?', style: TextStyle(color: color)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: tokens.map((t) {
@@ -268,7 +273,7 @@ class _GameScreenState extends State<GameScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, -4),
           ),
@@ -331,10 +336,10 @@ class _GameScreenState extends State<GameScreen> {
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => _confirmQuit(context, game),
           ),
-          Expanded(
+          const Expanded(
             child: Text(
               S.appName,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -360,9 +365,9 @@ class _GameScreenState extends State<GameScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
-        color: NepaliColors.primaryDark.withOpacity(0.92),
+        color: NepaliColors.primaryDark.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8)],
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
       ),
       child: Text(
         message,
@@ -373,10 +378,7 @@ class _GameScreenState extends State<GameScreen> {
         ),
         textAlign: TextAlign.center,
       ),
-    )
-        .animate()
-        .fadeIn(duration: 300.ms)
-        .scale(begin: const Offset(0.85, 0.85));
+    ).animate().fadeIn(duration: 300.ms).scale(begin: const Offset(0.85, 0.85));
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -388,8 +390,8 @@ class _GameScreenState extends State<GameScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('🏆 बधाई छ!', textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 28)),
+        title: const Text('🏆 बधाई छ!',
+            textAlign: TextAlign.center, style: TextStyle(fontSize: 28)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -400,7 +402,8 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(height: 16),
             if (state.finishedOrder.length > 1) ...[
-              const Text('क्रम:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('क्रम:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               ...state.finishedOrder.asMap().entries.map((e) => Text(
                     '${e.key + 1}. ${state.players[e.value].name}',
                     style: const TextStyle(fontSize: 16),
@@ -414,7 +417,7 @@ class _GameScreenState extends State<GameScreen> {
               Navigator.pop(ctx);
               Navigator.pop(context); // back to home
             },
-            child: Text(S.quitGame),
+            child: const Text(S.quitGame),
           ),
           ElevatedButton(
             onPressed: () {
@@ -422,12 +425,16 @@ class _GameScreenState extends State<GameScreen> {
               // Restart with same players
               final provider = context.read<GameProvider>();
               provider.startNewGame(
-                players: state.players.map((p) => p.copyWith(
-                  tokens: null, hasWon: false, finishOrder: 0,
-                )).toList(),
+                players: state.players
+                    .map((p) => p.copyWith(
+                          tokens: null,
+                          hasWon: false,
+                          finishOrder: 0,
+                        ))
+                    .toList(),
               );
             },
-            child: Text(S.playAgain),
+            child: const Text(S.playAgain),
           ),
         ],
       ),
@@ -443,7 +450,7 @@ class _GameScreenState extends State<GameScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(S.cancel),
+            child: const Text(S.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -451,7 +458,7 @@ class _GameScreenState extends State<GameScreen> {
               await game.quitGame();
               if (context.mounted) Navigator.pop(context);
             },
-            child: Text(S.quitGame),
+            child: const Text(S.quitGame),
           ),
         ],
       ),
@@ -473,8 +480,10 @@ class _GameScreenState extends State<GameScreen> {
             ...state.players.map((p) => ListTile(
                   leading: CircleAvatar(
                     backgroundColor: NepaliColors.playerColor(p.index),
-                    child: Text('${p.finishOrder > 0 ? "🏆" : p.tokens.where((t) => t.isFinished).length}',
-                        style: const TextStyle(color: Colors.white, fontSize: 12)),
+                    child: Text(
+                        '${p.finishOrder > 0 ? "🏆" : p.tokens.where((t) => t.isFinished).length}',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12)),
                   ),
                   title: Text(p.name),
                   subtitle: Text(

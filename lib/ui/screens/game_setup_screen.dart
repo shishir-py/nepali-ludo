@@ -22,8 +22,8 @@ class GameSetupScreen extends StatefulWidget {
 
 class _GameSetupScreenState extends State<GameSetupScreen> {
   int _playerCount = 2;
-  final List<TextEditingController> _nameControllers = List.generate(
-      4, (i) => TextEditingController());
+  final List<TextEditingController> _nameControllers =
+      List.generate(4, (i) => TextEditingController());
   final List<PlayerType> _types = List.filled(4, PlayerType.human);
   final List<AiDifficulty> _difficulties = List.filled(4, AiDifficulty.normal);
 
@@ -44,14 +44,16 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
 
   @override
   void dispose() {
-    for (final c in _nameControllers) c.dispose();
+    for (final c in _nameControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.gameSetup)),
+      appBar: AppBar(title: const Text(S.gameSetup)),
       backgroundColor: NepaliColors.background,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -71,8 +73,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _startGame,
-                child: Text(S.startGame,
-                    style: const TextStyle(fontSize: 20)),
+                child: const Text(S.startGame, style: TextStyle(fontSize: 20)),
               ),
             ),
           ],
@@ -107,10 +108,12 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: selected ? NepaliColors.primary : NepaliColors.surfaceDark,
+                color:
+                    selected ? NepaliColors.primary : NepaliColors.surfaceDark,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: selected ? NepaliColors.primaryDark : Colors.transparent,
+                  color:
+                      selected ? NepaliColors.primaryDark : Colors.transparent,
                   width: 2,
                 ),
               ),
@@ -137,7 +140,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
+        side: BorderSide(color: color.withValues(alpha: 0.5), width: 1.5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -170,8 +173,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 prefixIcon: Text(
                   _types[index] == PlayerType.ai ? '🤖' : '👤',
                   style: const TextStyle(fontSize: 20),
@@ -182,7 +185,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
             // Human / AI toggle
             SegmentedButton<PlayerType>(
               segments: const [
-                ButtonSegment(value: PlayerType.human, label: Text('👤 मान्छे')),
+                ButtonSegment(
+                    value: PlayerType.human, label: Text('👤 मान्छे')),
                 ButtonSegment(value: PlayerType.ai, label: Text('🤖 AI')),
               ],
               selected: {_types[index]},
@@ -214,8 +218,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
         ButtonSegment(value: AiDifficulty.hard, label: Text('गाह्रो')),
       ],
       selected: {_difficulties[index]},
-      onSelectionChanged: (s) =>
-          setState(() => _difficulties[index] = s.first),
+      onSelectionChanged: (s) => setState(() => _difficulties[index] = s.first),
     );
   }
 

@@ -66,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
+                          color: Colors.black.withValues(alpha: 0.4),
                           blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
@@ -86,9 +86,9 @@ class _SplashScreenState extends State<SplashScreen> {
                   const SizedBox(height: 32),
 
                   // App name
-                  Text(
+                  const Text(
                     S.appName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 42,
                       fontWeight: FontWeight.bold,
@@ -112,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   Text(
                     S.appTagline,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 22,
                       fontStyle: FontStyle.italic,
                     ),
@@ -133,11 +133,12 @@ class _SplashScreenState extends State<SplashScreen> {
                         height: 10,
                         margin: const EdgeInsets.symmetric(horizontal: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           shape: BoxShape.circle,
                         ),
                       )
-                          .animate(delay: Duration(milliseconds: 1000 + i * 200))
+                          .animate(
+                              delay: Duration(milliseconds: 1000 + i * 200))
                           .fadeIn(duration: 400.ms)
                           .then(delay: 300.ms)
                           .scale(
@@ -186,7 +187,7 @@ class _DhakaPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
+      ..color = Colors.white.withValues(alpha: 0.04)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
@@ -203,7 +204,7 @@ class _DhakaPatternPainter extends CustomPainter {
       canvas.drawLine(
         Offset(x, 0),
         Offset(x + size.height, size.height),
-        paint..color = Colors.white.withOpacity(0.03),
+        paint..color = Colors.white.withValues(alpha: 0.03),
       );
     }
   }

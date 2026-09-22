@@ -58,8 +58,8 @@ class AiEngine {
     }
 
     // 3. Capture an opponent token.
-    final capturing = moves.where((t) =>
-        _wouldCapture(engine, playerIndex, t, diceValue));
+    final capturing =
+        moves.where((t) => _wouldCapture(engine, playerIndex, t, diceValue));
     if (capturing.isNotEmpty) return capturing.first;
 
     // 4. Move the token closest to home.

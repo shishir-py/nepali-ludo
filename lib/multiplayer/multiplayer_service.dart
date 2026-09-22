@@ -6,6 +6,7 @@
 /// The architecture is designed so the game engine (GameEngine) can be driven
 /// by either a local GameProvider or a remote MultiplayerService without
 /// changing any game logic code.
+library;
 
 // ─────────────────────────────────────────────────────────────
 // Data Models
@@ -13,7 +14,7 @@
 
 class GameRoom {
   final String id;
-  final String code;        // 6-char invite code
+  final String code; // 6-char invite code
   final String hostId;
   final List<String> playerIds;
   final RoomStatus status;
@@ -92,7 +93,13 @@ abstract class MultiplayerService {
 // Remote Actions
 // ─────────────────────────────────────────────────────────────
 
-enum RemoteActionType { diceRolled, tokenMoved, reaction, playerLeft, playerRejoined }
+enum RemoteActionType {
+  diceRolled,
+  tokenMoved,
+  reaction,
+  playerLeft,
+  playerRejoined
+}
 
 class RemoteAction {
   final RemoteActionType type;
@@ -152,7 +159,6 @@ class StubMultiplayerService implements MultiplayerService {
 class _NotImplemented implements Exception {
   const _NotImplemented();
   @override
-  String toString() =>
-      'Online multiplayer is coming in v1.1! '
+  String toString() => 'Online multiplayer is coming in v1.1! '
       'Follow the GitHub repository for updates.';
 }

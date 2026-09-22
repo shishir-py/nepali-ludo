@@ -11,25 +11,29 @@ class BoardConfig {
     // 0-4: Red entry → going right along row 6
     Point(6, 1), Point(6, 2), Point(6, 3), Point(6, 4), Point(6, 5),
     // 5-10: up col 6
-    Point(5, 6), Point(4, 6), Point(3, 6), Point(2, 6), Point(1, 6), Point(0, 6),
+    Point(5, 6), Point(4, 6), Point(3, 6), Point(2, 6), Point(1, 6),
+    Point(0, 6),
     // 11-12: across top
     Point(0, 7), Point(0, 8),
     // 13-17: Green entry → down col 8
     Point(1, 8), Point(2, 8), Point(3, 8), Point(4, 8), Point(5, 8),
     // 18-23: right along row 6 (right half)
-    Point(6, 9), Point(6, 10), Point(6, 11), Point(6, 12), Point(6, 13), Point(6, 14),
+    Point(6, 9), Point(6, 10), Point(6, 11), Point(6, 12), Point(6, 13),
+    Point(6, 14),
     // 24-25: down right edge
     Point(7, 14), Point(8, 14),
     // 26-30: Yellow entry → left along row 8
     Point(8, 13), Point(8, 12), Point(8, 11), Point(8, 10), Point(8, 9),
     // 31-36: down col 8 (bottom)
-    Point(9, 8), Point(10, 8), Point(11, 8), Point(12, 8), Point(13, 8), Point(14, 8),
+    Point(9, 8), Point(10, 8), Point(11, 8), Point(12, 8), Point(13, 8),
+    Point(14, 8),
     // 37-38: across bottom
     Point(14, 7), Point(14, 6),
     // 39-43: Blue entry → up col 6 (bottom)
     Point(13, 6), Point(12, 6), Point(11, 6), Point(10, 6), Point(9, 6),
     // 44-49: left along row 8
-    Point(8, 5), Point(8, 4), Point(8, 3), Point(8, 2), Point(8, 1), Point(8, 0),
+    Point(8, 5), Point(8, 4), Point(8, 3), Point(8, 2), Point(8, 1),
+    Point(8, 0),
     // 50-51: up left edge → Red's gateway to home column
     Point(7, 0), Point(6, 0),
   ];
@@ -39,16 +43,32 @@ class BoardConfig {
   // Index 0 = first cell entered, index 4 = last before centre.
   // ──────────────────────────────────────────────────────────────
   static const List<Point<int>> redHomeColumn = [
-    Point(7, 1), Point(7, 2), Point(7, 3), Point(7, 4), Point(7, 5),
+    Point(7, 1),
+    Point(7, 2),
+    Point(7, 3),
+    Point(7, 4),
+    Point(7, 5),
   ];
   static const List<Point<int>> greenHomeColumn = [
-    Point(1, 7), Point(2, 7), Point(3, 7), Point(4, 7), Point(5, 7),
+    Point(1, 7),
+    Point(2, 7),
+    Point(3, 7),
+    Point(4, 7),
+    Point(5, 7),
   ];
   static const List<Point<int>> yellowHomeColumn = [
-    Point(7, 13), Point(7, 12), Point(7, 11), Point(7, 10), Point(7, 9),
+    Point(7, 13),
+    Point(7, 12),
+    Point(7, 11),
+    Point(7, 10),
+    Point(7, 9),
   ];
   static const List<Point<int>> blueHomeColumn = [
-    Point(13, 7), Point(12, 7), Point(11, 7), Point(10, 7), Point(9, 7),
+    Point(13, 7),
+    Point(12, 7),
+    Point(11, 7),
+    Point(10, 7),
+    Point(9, 7),
   ];
 
   /// Centre cell — a token placed here is finished.
@@ -78,21 +98,31 @@ class BoardConfig {
   /// Home column for each player index.
   static List<List<Point<int>>> homeColumns(int playerIndex) {
     switch (playerIndex) {
-      case 0: return redHomeColumn as List<List<Point<int>>>;
-      case 1: return greenHomeColumn as List<List<Point<int>>>;
-      case 2: return yellowHomeColumn as List<List<Point<int>>>;
-      case 3: return blueHomeColumn as List<List<Point<int>>>;
-      default: throw ArgumentError('Invalid player index: $playerIndex');
+      case 0:
+        return redHomeColumn as List<List<Point<int>>>;
+      case 1:
+        return greenHomeColumn as List<List<Point<int>>>;
+      case 2:
+        return yellowHomeColumn as List<List<Point<int>>>;
+      case 3:
+        return blueHomeColumn as List<List<Point<int>>>;
+      default:
+        throw ArgumentError('Invalid player index: $playerIndex');
     }
   }
 
   static List<Point<int>> playerHomeColumn(int playerIndex) {
     switch (playerIndex) {
-      case 0: return redHomeColumn;
-      case 1: return greenHomeColumn;
-      case 2: return yellowHomeColumn;
-      case 3: return blueHomeColumn;
-      default: throw ArgumentError('Invalid player index: $playerIndex');
+      case 0:
+        return redHomeColumn;
+      case 1:
+        return greenHomeColumn;
+      case 2:
+        return yellowHomeColumn;
+      case 3:
+        return blueHomeColumn;
+      default:
+        throw ArgumentError('Invalid player index: $playerIndex');
     }
   }
 
@@ -115,7 +145,8 @@ class BoardConfig {
 
   /// Returns the board cell for a token at [localPos] for [playerIndex].
   /// localPos: -1 = yard, 0-51 = main track, 52-56 = home column, 57 = finished
-  static Point<int>? boardCell(int playerIndex, int localPos, int tokenIndexInYard) {
+  static Point<int>? boardCell(
+      int playerIndex, int localPos, int tokenIndexInYard) {
     if (localPos == -1) {
       return yardPositions[playerIndex][tokenIndexInYard];
     }
@@ -150,11 +181,16 @@ class BoardConfig {
   /// Returns true if (row, col) is inside the given player's home yard.
   static bool isInYard(int playerIndex, int row, int col) {
     switch (playerIndex) {
-      case 0: return row >= 1 && row <= 4 && col >= 1 && col <= 4;
-      case 1: return row >= 1 && row <= 4 && col >= 10 && col <= 13;
-      case 2: return row >= 10 && row <= 13 && col >= 10 && col <= 13;
-      case 3: return row >= 10 && row <= 13 && col >= 1 && col <= 4;
-      default: return false;
+      case 0:
+        return row >= 1 && row <= 4 && col >= 1 && col <= 4;
+      case 1:
+        return row >= 1 && row <= 4 && col >= 10 && col <= 13;
+      case 2:
+        return row >= 10 && row <= 13 && col >= 10 && col <= 13;
+      case 3:
+        return row >= 10 && row <= 13 && col >= 1 && col <= 4;
+      default:
+        return false;
     }
   }
 
@@ -177,7 +213,7 @@ class BoardConfig {
 
   /// Coloured starting cells for player entry (their start square is coloured).
   static bool isPlayerEntryCell(int row, int col) {
-    return mainTrack.indexOf(Point(row, col)) != -1 &&
+    return mainTrack.contains(Point(row, col)) &&
         playerStartGlobalIndex.any((i) => mainTrack[i] == Point(row, col));
   }
 }

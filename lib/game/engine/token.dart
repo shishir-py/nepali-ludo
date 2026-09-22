@@ -31,7 +31,6 @@ class Token {
     if (isFinished) return false;
     if (isInYard) return diceValue == 6;
 
-    final newPos = position + diceValue;
     // On main track
     if (position <= 51) {
       if (position + diceValue > 57) return false; // overshoot home

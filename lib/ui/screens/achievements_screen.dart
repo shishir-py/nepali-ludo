@@ -157,12 +157,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final unlocked = _stats == null ? 0 :
-        _achievements.where((a) => a.isUnlocked(_stats!)).length;
+    final unlocked = _stats == null
+        ? 0
+        : _achievements.where((a) => a.isUnlocked(_stats!)).length;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.achievements),
+        title: const Text(S.achievements),
         actions: [
           if (_stats != null)
             Padding(
@@ -197,8 +198,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       childAspectRatio: 1.1,
                     ),
                     itemCount: _achievements.length,
-                    itemBuilder: (context, i) =>
-                        _buildCard(_achievements[i]),
+                    itemBuilder: (context, i) => _buildCard(_achievements[i]),
                   ),
                 ),
               ],
@@ -207,9 +207,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   }
 
   Widget _buildProgressBar(int unlocked) {
-    final progress = _achievements.isEmpty
-        ? 0.0
-        : unlocked / _achievements.length;
+    final progress =
+        _achievements.isEmpty ? 0.0 : unlocked / _achievements.length;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       color: NepaliColors.surface,
@@ -222,7 +221,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               const Text('उपलब्धि प्रगति',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               Text('${(progress * 100).toInt()}%',
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: NepaliColors.primary,
                       fontWeight: FontWeight.bold)),
             ],
@@ -234,7 +233,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               value: progress,
               minHeight: 8,
               backgroundColor: NepaliColors.surfaceDark,
-              valueColor: AlwaysStoppedAnimation(NepaliColors.primary),
+              valueColor: const AlwaysStoppedAnimation(NepaliColors.primary),
             ),
           ),
         ],
@@ -251,7 +250,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: isUnlocked
-              ? NepaliColors.gold.withOpacity(0.6)
+              ? NepaliColors.gold.withValues(alpha: 0.6)
               : Colors.transparent,
           width: 1.5,
         ),
@@ -264,7 +263,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    NepaliColors.gold.withOpacity(0.12),
+                    NepaliColors.gold.withValues(alpha: 0.12),
                     Colors.transparent,
                   ],
                 )
@@ -279,10 +278,26 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   ? const ColorFilter.mode(
                       Colors.transparent, BlendMode.saturation)
                   : const ColorFilter.matrix([
-                      0.2126, 0.7152, 0.0722, 0, 0,
-                      0.2126, 0.7152, 0.0722, 0, 0,
-                      0.2126, 0.7152, 0.0722, 0, 0,
-                      0,      0,      0,      1, 0,
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      1,
+                      0,
                     ]),
               child: Text(
                 achievement.emoji,
@@ -310,7 +325,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 fontSize: 11,
                 color: isUnlocked
                     ? NepaliColors.textSecondary
-                    : NepaliColors.textSecondary.withOpacity(0.5),
+                    : NepaliColors.textSecondary.withValues(alpha: 0.5),
               ),
               textAlign: TextAlign.center,
               maxLines: 2,

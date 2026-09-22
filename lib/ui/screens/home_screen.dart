@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: NepaliColors.primary.withOpacity(0.4),
+                color: NepaliColors.primary.withValues(alpha: 0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -92,9 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const Center(
             child: Text('🎲', style: TextStyle(fontSize: 56)),
           ),
-        )
-            .animate()
-            .scale(duration: 600.ms, curve: Curves.elasticOut),
+        ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
 
         const SizedBox(height: 16),
 
@@ -119,23 +117,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildContinueCard() {
     return Card(
-      color: NepaliColors.primaryLight.withOpacity(0.15),
+      color: NepaliColors.primaryLight.withValues(alpha: 0.15),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: NepaliColors.primary.withOpacity(0.4), width: 1.5),
+        side: BorderSide(
+            color: NepaliColors.primary.withValues(alpha: 0.4), width: 1.5),
       ),
       child: ListTile(
         leading: const Text('💾', style: TextStyle(fontSize: 32)),
-        title: Text(S.savedGame,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Text(S.savedGame,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         subtitle: const Text('तपाईंको पुरानो खेल जारी छ'),
         trailing: ElevatedButton(
           onPressed: _loadSavedGame,
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
-          child: Text(S.continueGame,
-              style: const TextStyle(fontSize: 13)),
+          child: const Text(S.continueGame, style: TextStyle(fontSize: 13)),
         ),
       ),
     ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1);
@@ -156,9 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final buttons = [
       _MenuButton(icon: '🎮', label: S.newGame, onTap: _openSetup),
       _MenuButton(
-          icon: '🤖',
-          label: S.vsComputer,
-          onTap: () => _openSetup(vsAi: true)),
+          icon: '🤖', label: S.vsComputer, onTap: () => _openSetup(vsAi: true)),
       _MenuButton(icon: '🌐', label: S.onlineGame, onTap: _openOnlineComing),
       _MenuButton(
           icon: '👥',
@@ -256,12 +252,11 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('🌐 अनलाइन खेल'),
-        content: Text(S.comingSoon,
-            style: const TextStyle(fontSize: 18)),
+        content: const Text(S.comingSoon, style: TextStyle(fontSize: 18)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(S.ok),
+            child: const Text(S.ok),
           ),
         ],
       ),

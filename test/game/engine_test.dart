@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nepali_ludo/game/engine/game_engine.dart';
-import 'package:nepali_ludo/game/engine/game_event.dart';
 import 'package:nepali_ludo/game/engine/game_state.dart';
 import 'package:nepali_ludo/game/engine/player.dart';
 import 'package:nepali_ludo/game/engine/token.dart';
@@ -41,11 +40,20 @@ void main() {
   });
 
   group('GameEngine – dice rolling', () {
-    test('rollDice sets diceRolled = true', () {
+    test('rollDice sets diceRolled = true when a move is available', () {
+      final e = _makeEngine();
+      // A 6 always leaves a move available (token exits the yard), so the
+      // turn isn't auto-passed and the flag stays set.
+      e.dice.forceValue(6);
+      e.rollDice();
+      expect(e.state.diceRolled, isTrue);
+    });
+
+    test('rollDice clears diceRolled when no move is available', () {
       final e = _makeEngine();
       e.dice.forceValue(3);
       e.rollDice();
-      expect(e.state.diceRolled, isTrue);
+      expect(e.state.diceRolled, isFalse);
     });
 
     test('rolling 6 from yard allows token to exit', () {
@@ -71,14 +79,17 @@ void main() {
       // 1st six → bring token out
       e.dice.forceValue(6);
       e.rollDice();
-      e.moveToken(e.state.currentPlayer.tokens.first);
+      e.moveToken(
+          e.state.currentPlayerIndex, e.state.currentPlayer.tokens.first);
       expect(e.state.currentPlayerIndex, initialPlayer); // extra turn
 
       // 2nd six → advance
       e.dice.forceValue(6);
       e.rollDice();
       final moveable2 = e.state.currentPlayer.moveableTokens(6);
-      if (moveable2.isNotEmpty) e.moveToken(moveable2.first);
+      if (moveable2.isNotEmpty) {
+        e.moveToken(e.state.currentPlayerIndex, moveable2.first);
+      }
       expect(e.state.currentPlayerIndex, initialPlayer); // extra turn again
 
       // 3rd six → should forfeit and switch player
@@ -95,7 +106,7 @@ void main() {
       e.dice.forceValue(6);
       e.rollDice();
       final t = e.state.currentPlayer.tokens.first;
-      e.moveToken(t);
+      e.moveToken(e.state.currentPlayerIndex, t);
       final moved = e.state.players[0].tokens.first;
       expect(moved.position, 0);
     });
@@ -105,7 +116,8 @@ void main() {
       // Bring token to board
       e.dice.forceValue(6);
       e.rollDice();
-      e.moveToken(e.state.currentPlayer.tokens.first);
+      e.moveToken(
+          e.state.currentPlayerIndex, e.state.currentPlayer.tokens.first);
 
       // Advance by 4 (same player gets extra turn after 6)
       e.dice.forceValue(4);
@@ -113,7 +125,7 @@ void main() {
       final moveable = e.state.currentPlayer.moveableTokens(4);
       if (moveable.isNotEmpty) {
         final before = moveable.first.position;
-        e.moveToken(moveable.first);
+        e.moveToken(e.state.currentPlayerIndex, moveable.first);
         // Find the moved token (it's now at before + 4)
         final allTokens = e.state.players.expand((p) => p.tokens);
         final moved = allTokens.firstWhere((t) => t.position == before + 4,
@@ -154,7 +166,8 @@ void main() {
       final initial = e.state.currentPlayerIndex;
       e.dice.forceValue(6);
       e.rollDice();
-      e.moveToken(e.state.currentPlayer.tokens.first);
+      e.moveToken(
+          e.state.currentPlayerIndex, e.state.currentPlayer.tokens.first);
       // Same player keeps turn after 6
       expect(e.state.currentPlayerIndex, initial);
     });

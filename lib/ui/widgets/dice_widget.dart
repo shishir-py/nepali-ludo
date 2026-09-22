@@ -67,15 +67,13 @@ class _DiceWidgetState extends State<DiceWidget> with TickerProviderStateMixin {
             color: widget.canRoll ? Colors.white : Colors.grey[200],
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: widget.canRoll
-                  ? NepaliColors.primary
-                  : Colors.grey[400]!,
+              color: widget.canRoll ? NepaliColors.primary : Colors.grey[400]!,
               width: 2.5,
             ),
             boxShadow: widget.canRoll
                 ? [
                     BoxShadow(
-                      color: NepaliColors.primary.withOpacity(0.4),
+                      color: NepaliColors.primary.withValues(alpha: 0.4),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     )
@@ -88,9 +86,15 @@ class _DiceWidgetState extends State<DiceWidget> with TickerProviderStateMixin {
         ),
       )
           .animate(target: widget.canRoll && !widget.isRolling ? 1 : 0)
-          .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 600.ms)
+          .scale(
+              begin: const Offset(1, 1),
+              end: const Offset(1.05, 1.05),
+              duration: 600.ms)
           .then()
-          .scale(begin: const Offset(1.05, 1.05), end: const Offset(1, 1), duration: 600.ms),
+          .scale(
+              begin: const Offset(1.05, 1.05),
+              end: const Offset(1, 1),
+              duration: 600.ms),
     );
   }
 
@@ -148,16 +152,23 @@ class _DiceDotPainter extends CustomPainter {
     final q4 = Offset(w * 0.72, h * 0.72);
     final m1 = Offset(w * 0.28, h * 0.5);
     final m2 = Offset(w * 0.72, h * 0.5);
-    final c  = Offset(w * 0.5,  h * 0.5);
+    final c = Offset(w * 0.5, h * 0.5);
 
     switch (value) {
-      case 1: return [c];
-      case 2: return [q1, q4];
-      case 3: return [q2, c, q3];
-      case 4: return [q1, q2, q3, q4];
-      case 5: return [q1, q2, c, q3, q4];
-      case 6: return [q1, q2, m1, m2, q3, q4];
-      default: return [];
+      case 1:
+        return [c];
+      case 2:
+        return [q1, q4];
+      case 3:
+        return [q2, c, q3];
+      case 4:
+        return [q1, q2, q3, q4];
+      case 5:
+        return [q1, q2, c, q3, q4];
+      case 6:
+        return [q1, q2, m1, m2, q3, q4];
+      default:
+        return [];
     }
   }
 

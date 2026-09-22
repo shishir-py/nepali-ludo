@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../game/engine/board_config.dart';
 import '../../game/engine/player.dart';
-import '../../game/engine/token.dart';
 
 /// Custom painter for the 15×15 Ludo board.
 /// Draws the board grid, coloured zones, safe-cell stars, home column paths,
@@ -80,7 +79,7 @@ class BoardPainter extends CustomPainter {
 
     Color fillColor;
     if (region >= 0) {
-      fillColor = NepaliColors.playerColor(region).withOpacity(0.55);
+      fillColor = NepaliColors.playerColor(region).withValues(alpha: 0.55);
     } else if (region == -2) {
       fillColor = Colors.transparent; // centre drawn separately
     } else {
@@ -94,7 +93,7 @@ class BoardPainter extends CustomPainter {
 
     // Cell border
     final borderPaint = Paint()
-      ..color = NepaliColors.boardBorder.withOpacity(0.25)
+      ..color = NepaliColors.boardBorder.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.5;
     canvas.drawRect(rect, borderPaint);
@@ -119,7 +118,7 @@ class BoardPainter extends CustomPainter {
     for (int pi = 0; pi < 4; pi++) {
       final col = columns[pi];
       final paint = Paint()
-        ..color = NepaliColors.playerColor(pi).withOpacity(0.72)
+        ..color = NepaliColors.playerColor(pi).withValues(alpha: 0.72)
         ..style = PaintingStyle.fill;
       for (final p in col) {
         canvas.drawRect(_cellRect(p.x, p.y, cellSize), paint);
@@ -151,7 +150,7 @@ class BoardPainter extends CustomPainter {
         ..lineTo(cx + r * cos(angle - pi / 4), cy + r * sin(angle - pi / 4))
         ..lineTo(cx + r * cos(angle + pi / 4), cy + r * sin(angle + pi / 4))
         ..close();
-      canvas.drawPath(path, Paint()..color = colors[i].withOpacity(0.85));
+      canvas.drawPath(path, Paint()..color = colors[i].withValues(alpha: 0.85));
     }
 
     // Centre star
@@ -167,7 +166,11 @@ class BoardPainter extends CustomPainter {
       final r = i.isEven ? radius : radius * 0.4;
       final angle = (i * pi / 5) - pi / 2;
       final p = Offset(centre.dx + r * cos(angle), centre.dy + r * sin(angle));
-      if (i == 0) path.moveTo(p.dx, p.dy); else path.lineTo(p.dx, p.dy);
+      if (i == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
+      }
     }
     path.close();
     canvas.drawPath(path, paint);
@@ -179,21 +182,21 @@ class BoardPainter extends CustomPainter {
 
   void _drawYardAreas(Canvas canvas, double cellSize) {
     final yardBounds = [
-      const Rect.fromLTWH(0, 0, 6, 6),         // Red
-      const Rect.fromLTWH(9, 0, 6, 6),          // Green
-      const Rect.fromLTWH(9, 9, 6, 6),          // Yellow
-      const Rect.fromLTWH(0, 9, 6, 6),          // Blue
+      const Rect.fromLTWH(0, 0, 6, 6), // Red
+      const Rect.fromLTWH(9, 0, 6, 6), // Green
+      const Rect.fromLTWH(9, 9, 6, 6), // Yellow
+      const Rect.fromLTWH(0, 9, 6, 6), // Blue
     ];
 
     for (int pi = 0; pi < 4; pi++) {
       final b = yardBounds[pi];
-      final rect = Rect.fromLTWH(
-          b.left * cellSize, b.top * cellSize, b.width * cellSize, b.height * cellSize);
+      final rect = Rect.fromLTWH(b.left * cellSize, b.top * cellSize,
+          b.width * cellSize, b.height * cellSize);
 
       // Background
       canvas.drawRRect(
         RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.5)),
-        Paint()..color = NepaliColors.playerColor(pi).withOpacity(0.8),
+        Paint()..color = NepaliColors.playerColor(pi).withValues(alpha: 0.8),
       );
 
       // Inner white rounded square
@@ -201,14 +204,14 @@ class BoardPainter extends CustomPainter {
       final innerRect = rect.deflate(innerPadding);
       canvas.drawRRect(
         RRect.fromRectAndRadius(innerRect, Radius.circular(cellSize * 0.4)),
-        Paint()..color = Colors.white.withOpacity(0.85),
+        Paint()..color = Colors.white.withValues(alpha: 0.85),
       );
 
       // Decorative Dhaka-style border on yard
       canvas.drawRRect(
         RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.5)),
         Paint()
-          ..color = NepaliColors.playerColor(pi).withOpacity(1.0)
+          ..color = NepaliColors.playerColor(pi).withValues(alpha: 1.0)
           ..style = PaintingStyle.stroke
           ..strokeWidth = cellSize * 0.08,
       );
@@ -224,7 +227,7 @@ class BoardPainter extends CustomPainter {
         canvas.drawCircle(
           centre,
           cellSize * 0.32,
-          Paint()..color = NepaliColors.playerColor(pi).withOpacity(0.2),
+          Paint()..color = NepaliColors.playerColor(pi).withValues(alpha: 0.2),
         );
         canvas.drawCircle(
           centre,
@@ -300,8 +303,8 @@ class BoardPainter extends CustomPainter {
           tokenId: token.id,
           localPos: token.position,
           cell: cell,
-          isHighlighted:
-              pi == currentPlayerIndex && highlightedTokenIds.contains(token.id),
+          isHighlighted: pi == currentPlayerIndex &&
+              highlightedTokenIds.contains(token.id),
         ));
       }
     }
@@ -333,19 +336,19 @@ class BoardPainter extends CustomPainter {
     ];
     for (int i = 0; i < count && i < 4; i++) {
       final off = offsets[i] * cellSize;
-      _drawSingleToken(canvas, tokens[i],
-          cellCentre + off, cellSize * 0.26);
+      _drawSingleToken(canvas, tokens[i], cellCentre + off, cellSize * 0.26);
     }
   }
 
-  void _drawSingleToken(Canvas canvas, _TokenInfo info, Offset centre, double radius) {
+  void _drawSingleToken(
+      Canvas canvas, _TokenInfo info, Offset centre, double radius) {
     final color = NepaliColors.playerColor(info.playerIndex);
 
     // Shadow
     canvas.drawCircle(
       centre + const Offset(2, 3),
       radius,
-      Paint()..color = Colors.black.withOpacity(0.3),
+      Paint()..color = Colors.black.withValues(alpha: 0.3),
     );
 
     // Body
@@ -355,12 +358,13 @@ class BoardPainter extends CustomPainter {
     canvas.drawCircle(
       centre - Offset(radius * 0.3, radius * 0.3),
       radius * 0.35,
-      Paint()..color = Colors.white.withOpacity(0.45),
+      Paint()..color = Colors.white.withValues(alpha: 0.45),
     );
 
     // Outer ring (white)
     canvas.drawCircle(
-      centre, radius,
+      centre,
+      radius,
       Paint()
         ..color = Colors.white
         ..style = PaintingStyle.stroke
@@ -370,7 +374,8 @@ class BoardPainter extends CustomPainter {
     // Highlight ring if this token can be moved
     if (info.isHighlighted) {
       canvas.drawCircle(
-        centre, radius + 3,
+        centre,
+        radius + 3,
         Paint()
           ..color = NepaliColors.gold
           ..style = PaintingStyle.stroke
