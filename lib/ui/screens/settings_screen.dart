@@ -207,7 +207,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontSize: 12, color: NepaliColors.textSecondary)),
         value: value,
         onChanged: onChanged,
-        activeThumbColor: NepaliColors.primary,
+        // NOTE: stays `activeColor` (not `activeThumbColor`, which needs
+        // Flutter 3.32+) so this builds on the 3.27.4 the workflows pin.
+        // ignore: deprecated_member_use
+        activeColor: NepaliColors.primary,
       ),
     );
   }
