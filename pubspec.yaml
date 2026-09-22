@@ -1,0 +1,66 @@
+name: nepali_ludo
+description: नेपाली लुडो - A complete Nepali-themed Ludo game for Android
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.2
+
+  # Local storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Audio
+  audioplayers: ^6.0.0
+
+  # Fonts
+  google_fonts: ^6.2.1
+
+  # Animations
+  flutter_animate: ^4.5.0
+
+  # Utils
+  shared_preferences: ^2.3.2
+  uuid: ^4.4.0
+  collection: ^1.18.0
+  path: ^1.9.0
+
+  # Custom sound picker
+  file_picker: ^8.1.2
+  path_provider: ^2.1.4
+
+  # Icons
+  flutter_svg: ^2.0.10+1
+
+  # Lottie animations
+  lottie: ^3.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.11
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/sounds/
+    - assets/fonts/
+
+  fonts:
+    - family: NotoSansDevanagari
+      fonts:
+        - asset: assets/fonts/NotoSansDevanagari-Regular.ttf
+        - asset: assets/fonts/NotoSansDevanagari-Bold.ttf
+          weight: 700
