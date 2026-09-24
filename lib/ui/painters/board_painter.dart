@@ -205,10 +205,10 @@ class BoardPainter extends CustomPainter {
       centre,
       discR,
       Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(-0.2, -0.3),
-          colors: const [_ivory, Color(0xFFF6EDD9), Color(0xFFE6D6B5)],
-          stops: const [0.0, 0.7, 1.0],
+        ..shader = const RadialGradient(
+          center: Alignment(-0.2, -0.3),
+          colors: [_ivory, Color(0xFFF6EDD9), Color(0xFFE6D6B5)],
+          stops: [0.0, 0.7, 1.0],
         ).createShader(Rect.fromCircle(center: centre, radius: discR)),
     );
     _mandala(canvas, centre, discR * 0.95, const Color(0xFFCDB88E));
