@@ -145,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16)),
-                Text('तपाईंको पुरानो खेल जारी छ',
+                Text('Pick up where you left off',
                     style: TextStyle(color: Colors.white70, fontSize: 13)),
               ],
             ),
@@ -287,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('🌐 अनलाइन खेल'),
+        title: const Text('🌐 Play Online'),
         content: const Text(S.comingSoon, style: TextStyle(fontSize: 18)),
         actions: [
           TextButton(

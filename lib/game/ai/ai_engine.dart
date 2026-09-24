@@ -4,7 +4,7 @@ import '../engine/game_engine.dart';
 import '../engine/player.dart';
 import '../engine/token.dart';
 
-/// AI decision engine for लाटो बोट (and all computer players).
+/// AI decision engine for Lato Bot (and all computer players).
 ///
 /// Three difficulty levels:
 ///  Easy   — random valid move selection

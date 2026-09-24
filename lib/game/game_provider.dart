@@ -285,9 +285,6 @@ class GameProvider extends ChangeNotifier {
         // turns into its home column.
         AudioManager().playTokenHome();
         break;
-      case GameEventType.noValidMove:
-        _showAnnouncement('😅 चाल छैन — अर्को पालो');
-        break;
       default:
         break;
     }
@@ -300,7 +297,7 @@ class GameProvider extends ChangeNotifier {
     _announcement = message;
     notifyListeners();
     _announcementTimer?.cancel();
-    _announcementTimer = Timer(const Duration(milliseconds: 1800), () {
+    _announcementTimer = Timer(const Duration(milliseconds: 1300), () {
       _announcement = null;
       notifyListeners();
     });

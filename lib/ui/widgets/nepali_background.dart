@@ -291,44 +291,63 @@ class _GlossyButtonState extends State<GlossyButton> {
                         ),
                       ),
                     ),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (widget.emoji != null) ...[
-                            Text(widget.emoji!,
-                                style: const TextStyle(fontSize: 26)),
-                            const SizedBox(width: 12),
-                          ],
-                          Text(
-                            widget.label,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              shadows: [
-                                Shadow(
-                                    color: Colors.black45,
-                                    offset: Offset(0, 2),
-                                    blurRadius: 3),
-                              ],
-                            ),
-                          ),
-                        ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    Positioned.fill(child: _content()),
                   ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  static const _labelStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 19,
+    fontWeight: FontWeight.w700,
+    shadows: [
+      Shadow(color: Colors.black45, offset: Offset(0, 2), blurRadius: 3),
+    ],
+  );
+
+  /// Icon in a fixed-width slot on the left, label left-aligned after it,
+  /// so every menu button lines up the same way. Without an icon the label
+  /// is centred.
+  Widget _content() {
+    if (widget.emoji == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(widget.label, style: _labelStyle),
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            child: Center(
+              child: Text(widget.emoji!, style: const TextStyle(fontSize: 24)),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              widget.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _labelStyle,
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded,
+              color: Colors.white70, size: 26),
+        ],
       ),
     );
   }

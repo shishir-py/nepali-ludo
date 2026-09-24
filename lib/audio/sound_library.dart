@@ -55,27 +55,27 @@ extension SoundEventLabel on SoundEvent {
   String get label {
     switch (this) {
       case SoundEvent.dice:
-        return '🎲 पासा घुमाउँदा';
+        return 'Dice roll';
       case SoundEvent.move:
-        return '🚶 Token सर्दा';
+        return 'Token step';
       case SoundEvent.enter:
-        return '🚀 गोटी बाहिर निस्कँदा';
+        return 'Token leaves yard';
       case SoundEvent.kill:
-        return '💥 काट्ने आवाज';
+        return 'Capture';
       case SoundEvent.safe:
-        return '🛡️ सुरक्षित सेल';
+        return 'Safe square';
       case SoundEvent.six:
-        return '🎯 छक्का!';
+        return 'Rolled a six';
       case SoundEvent.home:
-        return '🏠 घर पुग्दा';
+        return 'Token reaches home';
       case SoundEvent.win:
-        return '🏆 जित';
+        return 'Win';
       case SoundEvent.tap:
-        return '👆 बटन थिच्दा';
+        return 'Button tap';
       case SoundEvent.reaction:
-        return '😊 प्रतिक्रिया';
+        return 'Reaction';
       case SoundEvent.music:
-        return '🎵 पृष्ठभूमि संगीत';
+        return 'Background music';
     }
   }
 
@@ -91,7 +91,7 @@ extension SoundEventLabel on SoundEvent {
 
 /// A selectable sound — either a bundled asset or a user-uploaded file.
 class SoundOption {
-  /// Human-readable label shown in the picker (e.g. "काट #3").
+  /// Human-readable label shown in the picker (e.g. "Capture #3").
   final String label;
 
   /// Either a bundled asset path (e.g. `sounds/kill_3.mp3`)
@@ -166,24 +166,24 @@ class SoundLibrary {
   static const Map<SoundEvent, List<(String, String)>> extras = {
     // coins/dic_rolling.mp3: 0.73 s rattle, matches the dice animation.
     SoundEvent.dice: [
-      ('पासा घुम्दै (coins)', 'sounds/coins/dic_rolling.mp3'),
-      ('पासा (छोटो)', 'sounds/dice-roll-sound.mp3'),
+      ('Dice rolling (coins)', 'sounds/coins/dic_rolling.mp3'),
+      ('Dice (short)', 'sounds/dice-roll-sound.mp3'),
     ],
     // coins/coin_kill.mp3: short 0.37 s hit when a pawn is captured.
     SoundEvent.kill: [
-      ('गोटी काटियो (coins)', 'sounds/coins/coin_kill.mp3'),
+      ('Token captured (coins)', 'sounds/coins/coin_kill.mp3'),
     ],
     // game/coin_in_game.mp3: pawn comes *into* the game from the yard.
     SoundEvent.enter: [
-      ('गोटी खेलमा (game)', 'sounds/game/coin_in_game.mp3'),
+      ('Token in game (game)', 'sounds/game/coin_in_game.mp3'),
     ],
     // coins/coin_out.mp3: pawn goes *out* of the game — it reached home.
     SoundEvent.home: [
-      ('गोटी घर पुग्यो (coins)', 'sounds/coins/coin_out.mp3'),
+      ('Token home (coins)', 'sounds/coins/coin_out.mp3'),
     ],
     // game/game_winner.mp3: 9 s victory tune.
     SoundEvent.win: [
-      ('विजेता (game)', 'sounds/game/game_winner.mp3'),
+      ('Winner (game)', 'sounds/game/game_winner.mp3'),
     ],
   };
 
@@ -205,31 +205,31 @@ class SoundLibrary {
 }
 
 extension _SoundEventShortLabel on SoundEvent {
-  /// Shorter label used inside the variant name ("काट #3").
+  /// Shorter label used inside the variant name ("Capture #3").
   String get _shortLabel {
     switch (this) {
       case SoundEvent.dice:
-        return 'पासा';
+        return 'Dice';
       case SoundEvent.move:
-        return 'सर्ने';
+        return 'Step';
       case SoundEvent.enter:
-        return 'बाहिर';
+        return 'Enter';
       case SoundEvent.kill:
-        return 'काट';
+        return 'Capture';
       case SoundEvent.safe:
-        return 'सुरक्षित';
+        return 'Safe';
       case SoundEvent.six:
-        return 'छक्का';
+        return 'Six';
       case SoundEvent.home:
-        return 'घर';
+        return 'Home';
       case SoundEvent.win:
-        return 'जित';
+        return 'Win';
       case SoundEvent.tap:
-        return 'क्लिक';
+        return 'Click';
       case SoundEvent.reaction:
-        return 'प्रतिक्रिया';
+        return 'Reaction';
       case SoundEvent.music:
-        return 'संगीत';
+        return 'Music';
     }
   }
 }

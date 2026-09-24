@@ -65,7 +65,6 @@ class GameEngine {
         type: GameEventType.sixRolled,
         playerIndex: state.currentPlayerIndex,
         diceValue: value,
-        message: '🎲 छक्का!',
       ));
     }
 
@@ -129,7 +128,6 @@ class GameEngine {
           type: GameEventType.tokenEnteredHome,
           playerIndex: playerIndex,
           tokenId: token.id,
-          message: '🏠 घर पुग्यो!',
         );
         produced.add(ev);
         _emit(ev);
@@ -163,7 +161,6 @@ class GameEngine {
             type: GameEventType.landedOnSafe,
             playerIndex: playerIndex,
             tokenId: token.id,
-            message: '🛡️ सुरक्षित!',
           );
           produced.add(safeEv);
           _emit(safeEv);
@@ -182,7 +179,6 @@ class GameEngine {
       final winEv = GameEvent(
         type: GameEventType.playerWon,
         playerIndex: playerIndex,
-        message: '🏆 बधाई छ!',
       );
       produced.add(winEv);
       _emit(winEv);
@@ -238,7 +234,7 @@ class GameEngine {
       type: GameEventType.tokenFinished,
       playerIndex: playerIndex,
       tokenId: token.id,
-      message: '🏠 घर पुग्यो! 🎉',
+      message: 'Home! 🏠',
     );
     _emit(ev);
     return ev;
@@ -265,7 +261,7 @@ class GameEngine {
             tokenId: movingToken.id,
             capturedPlayerIndex: pi,
             capturedTokenId: t.id,
-            message: '💥 काटियो!',
+            message: 'Captured! 💥',
           );
           _emit(ev);
           return ev;

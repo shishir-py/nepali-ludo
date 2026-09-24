@@ -40,7 +40,7 @@ class Player {
     this.finishOrder = 0,
   }) : tokens = tokens ?? List.generate(4, (i) => Token(id: i, position: -1));
 
-  static const List<String> colorNames = ['रातो', 'हरियो', 'पहेँलो', 'नीलो'];
+  static const List<String> colorNames = ['Red', 'Green', 'Yellow', 'Blue'];
   static const List<String> colorHex = [
     '#E53935',
     '#43A047',

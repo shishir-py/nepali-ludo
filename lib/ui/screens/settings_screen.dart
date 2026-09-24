@@ -43,11 +43,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _sectionHeader('🔊 आवाज'),
+          _sectionHeader('🔊 Sound'),
           _switchTile(
             icon: Icons.volume_up_rounded,
             title: S.soundEffects,
-            subtitle: 'पासा, token र कब्जाका आवाजहरू',
+            subtitle: 'Dice, moves and captures',
             value: _settings.soundEnabled,
             onChanged: (v) {
               setState(() => _settings = _settings.copyWith(soundEnabled: v));
@@ -57,7 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _switchTile(
             icon: Icons.music_note_rounded,
             title: S.music,
-            subtitle: 'पृष्ठभूमि संगीत',
+            subtitle: 'Background music',
             value: _settings.musicEnabled,
             onChanged: (v) {
               setState(() => _settings = _settings.copyWith(musicEnabled: v));
@@ -66,8 +66,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _switchTile(
             icon: Icons.emoji_emotions_rounded,
-            title: 'प्रतिक्रिया आवाज',
-            subtitle: 'प्रतिक्रिया पठाउँदा आवाज',
+            title: 'Reaction sounds',
+            subtitle: 'Play a sound when reacting',
             value: _settings.reactionsEnabled,
             onChanged: (v) {
               setState(
@@ -77,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _sliderTile(
             icon: Icons.tune_rounded,
-            title: 'आवाजको मात्रा',
+            title: 'Volume',
             value: _settings.volume,
             onChanged: (v) {
               setState(() => _settings = _settings.copyWith(volume: v));
@@ -86,8 +86,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _infoTile(
             icon: Icons.library_music_rounded,
-            title: 'आवाज छान्नुहोस्',
-            subtitle: 'प्रत्येक घटनाको लागि आफ्नै आवाज तोक्नुहोस्',
+            title: 'Choose sounds',
+            subtitle: 'Pick a sound for each game event',
             onTap: () {
               Navigator.push(
                   context,
@@ -96,11 +96,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const SizedBox(height: 8),
-          _sectionHeader('📳 सूचना'),
+          _sectionHeader('📳 Feedback'),
           _switchTile(
             icon: Icons.vibration_rounded,
             title: S.vibration,
-            subtitle: 'खेलका महत्त्वपूर्ण क्षणहरूमा कम्पन',
+            subtitle: 'Vibrate on important moments',
             value: _settings.vibrationEnabled,
             onChanged: (v) {
               setState(
@@ -110,8 +110,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _switchTile(
             icon: Icons.campaign_rounded,
-            title: 'खेल घोषणाहरू',
-            subtitle: 'छक्का!, काटियो!, घर पुग्यो! जस्ता सन्देश',
+            title: 'Game announcements',
+            subtitle: 'Pop-ups like Captured! and Home!',
             value: _settings.showAnnouncements,
             onChanged: (v) {
               setState(
@@ -120,15 +120,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const SizedBox(height: 8),
-          _sectionHeader('🎮 खेल'),
+          _sectionHeader('🎮 Game'),
           _dropdownTile(
             icon: Icons.smart_toy_rounded,
-            title: 'AI कठिनाइ (पूर्वनिर्धारित)',
+            title: 'Default AI difficulty',
             value: _settings.aiDifficulty,
             items: const {
-              'easy': 'सजिलो',
-              'normal': 'सामान्य',
-              'hard': 'गाह्रो',
+              'easy': 'Easy',
+              'normal': 'Normal',
+              'hard': 'Hard',
             },
             onChanged: (v) {
               if (v != null) {
@@ -139,12 +139,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _dropdownTile(
             icon: Icons.animation_rounded,
-            title: 'एनिमेसन गुणस्तर',
+            title: 'Animation quality',
             value: _settings.animationQuality,
             items: const {
-              'low': 'कम',
-              'medium': 'मध्यम',
-              'high': 'उच्च',
+              'low': 'Low',
+              'medium': 'Medium',
+              'high': 'High',
             },
             onChanged: (v) {
               if (v != null) {
@@ -155,17 +155,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const SizedBox(height: 8),
-          _sectionHeader('ℹ️ बारेमा'),
+          _sectionHeader('ℹ️ About'),
           _infoTile(
             icon: Icons.info_outline_rounded,
             title: S.about,
-            subtitle: 'नेपाली लुडो v1.0.0',
+            subtitle: 'Nepali Ludo v1.0.0',
             onTap: _showAboutDialog,
           ),
           _infoTile(
             icon: Icons.delete_outline_rounded,
-            title: 'तथ्याङ्क मेटाउनुहोस्',
-            subtitle: 'सबै खेल तथ्याङ्क हटाउनुहोस्',
+            title: 'Reset statistics',
+            subtitle: 'Delete all game statistics',
             onTap: _confirmResetStats,
             textColor: Colors.red,
           ),
@@ -315,8 +315,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       applicationIcon: const Text('🎲', style: TextStyle(fontSize: 48)),
       children: [
         const Text(
-          'नेपाली लुडो एक नेपाली भाषा र संस्कृतिमा आधारित लुडो खेल हो।\n\n'
-          'यो खेल पूर्ण रूपमा अफलाइन खेल्न सकिन्छ।\n\n'
+          'Nepali Ludo is a classic Ludo game with a Nepali-inspired look.\n\n'
+          'It works fully offline.\n\n'
           'GitHub: github.com/nepali-ludo',
         ),
       ],
@@ -327,9 +327,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('तथ्याङ्क मेटाउने?'),
+        title: const Text('Reset statistics?'),
         content: const Text(
-            'यो कार्य पूर्ववत गर्न सकिँदैन। के तपाईं निश्चित हुनुहुन्छ?'),
+            'This cannot be undone. Are you sure?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -338,7 +338,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('मेटाउनुहोस्'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -347,7 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await SettingsStorage.resetStats();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('तथ्याङ्क मेटाइयो।')),
+          const SnackBar(content: Text('Statistics reset.')),
         );
       }
     }

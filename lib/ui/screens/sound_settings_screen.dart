@@ -15,7 +15,7 @@ class SoundSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('🔊 आवाज सेटिङ')),
+      appBar: AppBar(title: const Text('Sounds')),
       backgroundColor: NepaliColors.background,
       body: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -27,7 +27,7 @@ class SoundSettingsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.restore),
-                label: const Text('सबै आवाज पूर्वनिर्धारित बनाउनुहोस्'),
+                label: const Text('Reset all sounds to default'),
                 onPressed: () => _confirmResetAll(context),
               ),
             );
@@ -43,18 +43,18 @@ class SoundSettingsScreen extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('सबै आवाज रिसेट गर्ने?'),
+        title: const Text('Reset all sounds?'),
         content:
-            const Text('सबै आवाज पूर्वनिर्धारित (variant #1) मा फर्किन्छन्। '
-                'अपलोड गरिएका कस्टम आवाजहरू पनि मेटिनेछन्।'),
+            const Text('Every event goes back to its default sound. '
+                'Custom sounds you added will be removed.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('रद्द')),
+              child: const Text('Cancel')),
           ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('रिसेट')),
+              child: const Text('Reset')),
         ],
       ),
     );
@@ -63,7 +63,7 @@ class SoundSettingsScreen extends StatelessWidget {
       AudioManager.instance.invalidateChoiceCache();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('सबै आवाज रिसेट भयो।')),
+          const SnackBar(content: Text('All sounds reset.')),
         );
       }
     }
@@ -100,8 +100,8 @@ class _EventRowState extends State<_EventRow> {
           style: const TextStyle(fontWeight: FontWeight.w500)),
       subtitle: Text(
         _current == null
-            ? 'लोड हुँदै…'
-            : 'चयनित: ${_current!.label}${_current!.isAsset ? "" : "  (कस्टम)"}',
+            ? 'Loading…'
+            : 'Selected: ${_current!.label}${_current!.isAsset ? "" : "  (custom)"}',
         style: const TextStyle(fontSize: 12, color: NepaliColors.textSecondary),
       ),
       trailing: const Icon(Icons.chevron_right),
@@ -167,15 +167,15 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
       body: ListView(
         padding: const EdgeInsets.only(bottom: 100),
         children: [
-          _sectionHeader('निर्मित variant (${builtIn.length})'),
+          _sectionHeader('Built-in (${builtIn.length})'),
           ...builtIn.map((o) => _optionTile(o)),
           const SizedBox(height: 8),
-          _sectionHeader('कस्टम आवाजहरू (${custom.length})'),
+          _sectionHeader('Custom (${custom.length})'),
           if (custom.isEmpty)
             const Padding(
               padding: EdgeInsets.all(20),
               child: Text(
-                'अझै कुनै कस्टम आवाज छैन। तलको बटनबाट थप्नुहोस्।',
+                'No custom sounds yet. Add one with the button below.',
                 style: TextStyle(color: NepaliColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
@@ -186,7 +186,7 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.add),
-        label: const Text('कस्टम थप्नुहोस्'),
+        label: const Text('Add custom'),
         onPressed: _busy ? null : _pickCustom,
       ),
     );
@@ -223,7 +223,7 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
         leading: IconButton(
           icon: const Icon(Icons.play_arrow_rounded,
               color: NepaliColors.primary, size: 32),
-          tooltip: 'सुन्नुहोस्',
+          tooltip: 'Preview',
           onPressed: () => AudioManager.instance.preview(option),
         ),
         title: Text(option.label,
@@ -286,13 +286,13 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
       await _reload();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('थपियो: $label')),
+          SnackBar(content: Text('Added: $label')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('फाइल थप्न सकिएन: $e')),
+          SnackBar(content: Text('Could not add file: $e')),
         );
       }
     } finally {
@@ -316,16 +316,16 @@ class _SoundPickerScreenState extends State<SoundPickerScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('कस्टम आवाज मेटाउने?'),
-        content: Text('"${option.label}" मेटाइनेछ।'),
+        title: const Text('Delete custom sound?'),
+        content: Text('"${option.label}" will be deleted.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('रद्द')),
+              child: const Text('Cancel')),
           ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('मेटाउनुहोस्')),
+              child: const Text('Delete')),
         ],
       ),
     );

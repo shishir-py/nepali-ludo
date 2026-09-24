@@ -24,7 +24,7 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   String? _activeReaction;
   int? _reactionPlayer;
-  bool _tilted = true;
+  bool _tilted = false; // flat 2D board by default
   bool _winShown = false;
   bool _soundOn = AudioManager.instance.soundEnabled;
 
@@ -120,33 +120,20 @@ class _GameScreenState extends State<GameScreen> {
       padding: const EdgeInsets.fromLTRB(6, 18, 6, 2),
       child: Row(
         children: [
-          _roundIcon(Icons.arrow_back_rounded, () => _confirmQuit(context, game)),
-          const Expanded(
-            child: Text(
-              S.appName,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: NepaliColors.goldLight,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-              ),
-            ),
-          ),
+          _roundIcon(Icons.arrow_back_rounded, () => _confirmQuit(context, game),
+              tooltip: S.back),
+          const Spacer(),
           _roundIcon(
             _tilted ? Icons.grid_view_rounded : Icons.view_in_ar_rounded,
             () => setState(() => _tilted = !_tilted),
-            tooltip: _tilted ? '२D दृश्य' : '३D दृश्य',
+            tooltip: _tilted ? '2D view' : '3D view',
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           _roundIcon(
             _soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
             _toggleSound,
-            tooltip: 'आवाज',
+            tooltip: 'Sound',
           ),
-          const SizedBox(width: 6),
-          _roundIcon(Icons.info_outline_rounded,
-              () => _showGameInfo(context, state)),
         ],
       ),
     );
@@ -311,19 +298,7 @@ class _GameScreenState extends State<GameScreen> {
         !game.isDiceRolling &&
         !game.isTokenMoving &&
         state.phase != GamePhase.finished;
-    final current = state.currentPlayer;
-    final color = NepaliColors.playerColor(current.index);
-
-    final String hint;
-    if (isAi) {
-      hint = '🤖 ${current.name} सोच्दैछ…';
-    } else if (game.isDiceRolling) {
-      hint = 'पासा घुम्दैछ…';
-    } else if (state.diceRolled) {
-      hint = 'चम्किलो गोटी थिच्नुहोस्!';
-    } else {
-      hint = '${current.name}, पासा थिच्नुहोस्!';
-    }
+    final color = NepaliColors.playerColor(state.currentPlayer.index);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(10, 2, 10, 10),
@@ -348,29 +323,22 @@ class _GameScreenState extends State<GameScreen> {
           _roundIcon(Icons.emoji_emotions_outlined,
               () => _showReactions(context, state),
               tooltip: S.react),
-          const SizedBox(width: 10),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: Text(
-                hint,
-                key: ValueKey(hint),
-                maxLines: 2,
-                style: TextStyle(
-                  color: Color.lerp(color, Colors.white, 0.45),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
+            child: Center(
+              // No instruction text: the glowing dice and bobbing pawns
+              // already show what to do next.
+              child: DiceWidget(
+                value: state.lastDiceValue == 0 ? 1 : state.lastDiceValue,
+                isRolling: game.isDiceRolling,
+                canRoll: canRoll,
+                onRoll: game.rollDice,
+                size: 66,
               ),
             ),
           ),
-          DiceWidget(
-            value: state.lastDiceValue == 0 ? 1 : state.lastDiceValue,
-            isRolling: game.isDiceRolling,
-            canRoll: canRoll,
-            onRoll: game.rollDice,
-            size: 64,
-          ),
+          _roundIcon(Icons.info_outline_rounded,
+              () => _showGameInfo(context, state),
+              tooltip: 'Game info'),
         ],
       ),
     );
@@ -447,14 +415,14 @@ class _GameScreenState extends State<GameScreen> {
                   .animate()
                   .scale(duration: 600.ms, curve: Curves.elasticOut),
               const SizedBox(height: 6),
-              const Text('बधाई छ!',
+              const Text('Congratulations!',
                   style: TextStyle(
                       color: NepaliColors.goldLight,
                       fontSize: 30,
                       fontWeight: FontWeight.w900)),
               const SizedBox(height: 8),
               Text(
-                '${winner.name} ले खेल जित्नुभयो!',
+                '${winner.name} wins!',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     color: Colors.white,
@@ -512,8 +480,8 @@ class _GameScreenState extends State<GameScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('खेल छोड्ने?'),
-        content: const Text('तपाईंको प्रगति बचत गरिनेछ।'),
+        title: const Text('Leave the game?'),
+        content: const Text('Your progress will be saved.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -541,7 +509,7 @@ class _GameScreenState extends State<GameScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('खेलको जानकारी',
+            Text('Game info',
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             ...state.players.map((p) => ListTile(
@@ -554,15 +522,15 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                   title: Text(p.name),
                   subtitle: Text(
-                      '${p.tokens.where((t) => t.isActive).length} सक्रिय • ${p.tokens.where((t) => t.isInYard).length} घरमा'),
+                      '${p.tokens.where((t) => t.isActive).length} on board • ${p.tokens.where((t) => t.isInYard).length} in yard'),
                   trailing: p.hasWon
-                      ? Text('क्रम ${p.finishOrder}',
+                      ? Text('#${p.finishOrder}',
                           style: const TextStyle(fontWeight: FontWeight.bold))
                       : null,
                 )),
             const SizedBox(height: 8),
             const Text(
-              'सुझाव: चम्किलो गोटीमा थिचेर सार्नुहोस्। माथिको बटनले ३D/२D दृश्य बदल्छ।',
+              'Tip: tap a glowing token to move it. The cube button at the top switches between 2D and 3D.',
               style: TextStyle(fontSize: 13),
             ),
           ],

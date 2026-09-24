@@ -27,8 +27,8 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   final List<PlayerType> _types = List.filled(4, PlayerType.human);
   final List<AiDifficulty> _difficulties = List.filled(4, AiDifficulty.normal);
 
-  static const _colorNames = ['रातो 🔴', 'हरियो 🟢', 'पहेँलो 🟡', 'नीलो 🔵'];
-  static const _defaultNames = ['खेलाडी १', 'खेलाडी २', 'खेलाडी ३', 'खेलाडी ४'];
+  static const _colorNames = ['Red 🔴', 'Green 🟢', 'Yellow 🟡', 'Blue 🔵'];
+  static const _defaultNames = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
     }
     if (widget.defaultVsAi) {
       _types[1] = PlayerType.ai;
-      _nameControllers[1].text = 'लाटो बोट 🤖';
+      _nameControllers[1].text = 'Lato Bot';
     }
   }
 
@@ -63,7 +63,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
             _sectionTitle(S.playerCount),
             _buildPlayerCountSelector(),
             const SizedBox(height: 24),
-            _sectionTitle('खेलाडी विवरण'),
+            _sectionTitle('Players'),
             ...List.generate(
               _playerCount,
               (i) => _buildPlayerCard(i),
@@ -186,7 +186,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
             SegmentedButton<PlayerType>(
               segments: const [
                 ButtonSegment(
-                    value: PlayerType.human, label: Text('👤 मान्छे')),
+                    value: PlayerType.human, label: Text('👤 Human')),
                 ButtonSegment(value: PlayerType.ai, label: Text('🤖 AI')),
               ],
               selected: {_types[index]},
@@ -195,7 +195,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                   _types[index] = s.first;
                   if (s.first == PlayerType.ai &&
                       _nameControllers[index].text == _defaultNames[index]) {
-                    _nameControllers[index].text = 'लाटो बोट ${index + 1} 🤖';
+                    _nameControllers[index].text = 'Lato Bot ${index + 1}';
                   }
                 });
               },
@@ -213,9 +213,9 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   Widget _buildDifficultySelector(int index) {
     return SegmentedButton<AiDifficulty>(
       segments: const [
-        ButtonSegment(value: AiDifficulty.easy, label: Text('सजिलो')),
-        ButtonSegment(value: AiDifficulty.normal, label: Text('सामान्य')),
-        ButtonSegment(value: AiDifficulty.hard, label: Text('गाह्रो')),
+        ButtonSegment(value: AiDifficulty.easy, label: Text('Easy')),
+        ButtonSegment(value: AiDifficulty.normal, label: Text('Normal')),
+        ButtonSegment(value: AiDifficulty.hard, label: Text('Hard')),
       ],
       selected: {_difficulties[index]},
       onSelectionChanged: (s) => setState(() => _difficulties[index] = s.first),

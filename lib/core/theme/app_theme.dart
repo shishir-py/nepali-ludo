@@ -91,7 +91,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 4,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.notoSansDevanagari(
+        titleTextStyle: GoogleFonts.poppins(
           color: Colors.white,
           fontSize: 22,
           fontWeight: FontWeight.bold,
@@ -105,7 +105,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.notoSansDevanagari(
+          textStyle: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -125,7 +125,7 @@ class AppTheme {
   }
 
   static TextTheme _textTheme(TextTheme base) {
-    final nepali = GoogleFonts.notoSansDevanagariTextTheme(base);
+    final nepali = GoogleFonts.poppinsTextTheme(base);
     return nepali.copyWith(
       displayLarge: nepali.displayLarge?.copyWith(
           color: NepaliColors.textPrimary, fontWeight: FontWeight.bold),

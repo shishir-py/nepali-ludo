@@ -93,7 +93,7 @@ class ReactionPanel extends StatelessWidget {
           const Divider(),
           const SizedBox(height: 8),
           Text(
-            'नेपाली प्रतिक्रियाहरू',
+            'Quick messages',
             style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: 8),

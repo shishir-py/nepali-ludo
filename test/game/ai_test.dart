@@ -14,7 +14,7 @@ GameEngine _makeAiEngine() {
     Player(index: 0, name: 'Human', type: PlayerType.human),
     Player(
         index: 1,
-        name: 'लाटो बोट',
+        name: 'Lato Bot',
         type: PlayerType.ai,
         difficulty: AiDifficulty.normal),
   ]);
