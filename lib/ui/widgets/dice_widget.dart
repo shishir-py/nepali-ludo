@@ -5,11 +5,11 @@ import 'package:flutter/scheduler.dart';
 
 import '../../core/theme/app_theme.dart';
 
-/// A real 3D dice cube, rendered with perspective and lighting.
+/// A realistic dice: an ivory cube with rounded edges and sunken pips.
 ///
-/// While [isRolling] is true it tumbles and bounces; when rolling stops it
-/// settles on the face showing [value]. When [canRoll] is true it hovers
-/// with a pulsing golden glow to invite a tap.
+/// While [isRolling] it tumbles in 3D. When the roll lands it turns so the
+/// rolled face looks straight at the player, perfectly square and upright,
+/// and stays that way until the next roll.
 class DiceWidget extends StatefulWidget {
   final int value;
   final bool isRolling;
@@ -30,7 +30,7 @@ class DiceWidget extends StatefulWidget {
   State<DiceWidget> createState() => _DiceWidgetState();
 }
 
-/// Rotation (about X then Y) that brings each face to the front.
+/// Rotation (about X, then Y) that turns each face towards the viewer.
 const Map<int, (double, double)> _faceRotation = {
   1: (0.0, 0.0),
   6: (0.0, math.pi),
@@ -46,12 +46,11 @@ class _DiceWidgetState extends State<DiceWidget>
   Duration _last = Duration.zero;
   double _time = 0;
 
-  // Current orientation.
-  double _a = 0, _b = 0;
-  // Settle tween.
+  double _a = 0, _b = 0; // current orientation
   double _fromA = 0, _fromB = 0, _toA = 0, _toB = 0;
-  double _settleT = 1;
-  double _bounce = 0; // px, upwards
+  double _settleT = 1; // 1 = at rest
+  double _view = 0; // 1 = angled 3D view, 0 = face-on
+  double _bounce = 0; // px upwards
   bool _pressed = false;
 
   @override
@@ -67,26 +66,25 @@ class _DiceWidgetState extends State<DiceWidget>
   void didUpdateWidget(DiceWidget old) {
     super.didUpdateWidget(old);
     final landed = old.isRolling && !widget.isRolling;
-    final changedWhileIdle =
+    final changedAtRest =
         !widget.isRolling && old.value != widget.value && !landed;
-    if (landed || changedWhileIdle) _startSettle(widget.value);
+    if (landed || changedAtRest) _startSettle(widget.value);
   }
 
   void _startSettle(int value) {
     final target = _faceRotation[value.clamp(1, 6)]!;
-    _fromA = _a;
-    _fromB = _b;
-    // Always finish rotating forwards with at least one extra turn.
     double forward(double from, double to) {
       var t = to;
-      while (t < from + math.pi) {
+      while (t < from + math.pi * 0.5) {
         t += math.pi * 2;
       }
       return t;
     }
 
-    _toA = forward(_fromA, target.$1);
-    _toB = forward(_fromB, target.$2);
+    _fromA = _a;
+    _fromB = _b;
+    _toA = forward(_a, target.$1);
+    _toB = forward(_b, target.$2);
     _settleT = 0;
   }
 
@@ -95,22 +93,33 @@ class _DiceWidgetState extends State<DiceWidget>
         ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.05).toDouble();
     _last = elapsed;
     _time += dt;
+    final s = widget.size;
 
     if (widget.isRolling) {
-      _a += dt * 11;
-      _b += dt * 15;
-      _bounce = (math.sin(_time * 18)).abs() * widget.size * 0.14;
+      _a += dt * 10.5;
+      _b += dt * 14;
+      _view = math.min(1, _view + dt * 6);
+      _bounce = math.sin(_time * 17).abs() * s * 0.16;
     } else if (_settleT < 1) {
-      _settleT = math.min(1, _settleT + dt / 0.55);
-      final e = Curves.easeOutBack.transform(_settleT);
+      _settleT = math.min(1, _settleT + dt / 0.6);
+      final e = Curves.easeOutCubic.transform(_settleT);
       _a = _fromA + (_toA - _fromA) * e;
       _b = _fromB + (_toB - _fromB) * e;
-      _bounce = (1 - _settleT) * (math.sin(_settleT * math.pi * 3)).abs() *
-          widget.size * 0.1;
+      _view = 1 - Curves.easeInOut.transform(_settleT);
+      _bounce = (1 - _settleT) *
+          math.sin(_settleT * math.pi * 3).abs() *
+          s *
+          0.12;
+      if (_settleT >= 1) {
+        // Snap exactly onto the face so the pips are perfectly square.
+        final r = _faceRotation[widget.value.clamp(1, 6)]!;
+        _a = r.$1;
+        _b = r.$2;
+        _view = 0;
+      }
     } else {
-      _bounce = widget.canRoll
-          ? (math.sin(_time * 3) + 1) * widget.size * 0.03
-          : 0;
+      _bounce =
+          widget.canRoll ? (math.sin(_time * 3) + 1) * s * 0.025 : 0;
     }
     if (mounted) setState(() {});
   }
@@ -125,10 +134,7 @@ class _DiceWidgetState extends State<DiceWidget>
   Widget build(BuildContext context) {
     final s = widget.size;
     final glow = widget.canRoll && !widget.isRolling
-        ? 0.45 + 0.35 * math.sin(_time * 4)
-        : 0.0;
-    final wobble = widget.canRoll && !widget.isRolling && _settleT >= 1
-        ? math.sin(_time * 2.2) * 0.08
+        ? 0.5 + 0.35 * math.sin(_time * 4)
         : 0.0;
 
     return GestureDetector(
@@ -142,12 +148,13 @@ class _DiceWidgetState extends State<DiceWidget>
         scale: _pressed ? 0.9 : 1,
         duration: const Duration(milliseconds: 90),
         child: SizedBox(
-          width: s * 1.25,
-          height: s * 1.25,
+          width: s * 1.3,
+          height: s * 1.3,
           child: CustomPaint(
             painter: _DicePainter(
-              a: _a + wobble,
-              b: _b + wobble * 0.7,
+              a: _a,
+              b: _b,
+              view: _view,
               bounce: _bounce,
               glow: glow,
               dimmed: !widget.canRoll && !widget.isRolling,
@@ -185,7 +192,7 @@ class _Face {
   const _Face(this.value, this.n, this.u, this.v);
 }
 
-// z points towards the viewer; y points down (screen space).
+// z points at the viewer; y points down the screen.
 const _faces = [
   _Face(1, _V3(0, 0, 1), _V3(1, 0, 0), _V3(0, 1, 0)),
   _Face(6, _V3(0, 0, -1), _V3(-1, 0, 0), _V3(0, 1, 0)),
@@ -195,102 +202,135 @@ const _faces = [
   _Face(4, _V3(-1, 0, 0), _V3(0, 0, 1), _V3(0, 1, 0)),
 ];
 
-const _pipLayout = {
+// Pip centres in face coordinates (-1..1), classic layouts.
+const _d = 0.5;
+const _pips = {
   1: [Offset(0, 0)],
-  2: [Offset(-0.5, -0.5), Offset(0.5, 0.5)],
-  3: [Offset(-0.5, -0.5), Offset(0, 0), Offset(0.5, 0.5)],
-  4: [Offset(-0.5, -0.5), Offset(0.5, -0.5), Offset(-0.5, 0.5), Offset(0.5, 0.5)],
+  2: [Offset(-_d, -_d), Offset(_d, _d)],
+  3: [Offset(-_d, -_d), Offset(0, 0), Offset(_d, _d)],
+  4: [Offset(-_d, -_d), Offset(_d, -_d), Offset(-_d, _d), Offset(_d, _d)],
   5: [
-    Offset(-0.5, -0.5),
-    Offset(0.5, -0.5),
+    Offset(-_d, -_d),
+    Offset(_d, -_d),
     Offset(0, 0),
-    Offset(-0.5, 0.5),
-    Offset(0.5, 0.5)
+    Offset(-_d, _d),
+    Offset(_d, _d),
   ],
   6: [
-    Offset(-0.5, -0.55),
-    Offset(-0.5, 0),
-    Offset(-0.5, 0.55),
-    Offset(0.5, -0.55),
-    Offset(0.5, 0),
-    Offset(0.5, 0.55)
+    Offset(-_d, -_d),
+    Offset(-_d, 0),
+    Offset(-_d, _d),
+    Offset(_d, -_d),
+    Offset(_d, 0),
+    Offset(_d, _d),
   ],
 };
 
 class _DicePainter extends CustomPainter {
-  final double a, b, bounce, glow;
+  final double a, b, view, bounce, glow;
   final bool dimmed;
+
   _DicePainter({
     required this.a,
     required this.b,
+    required this.view,
     required this.bounce,
     required this.glow,
     required this.dimmed,
   });
 
-  // Fixed viewing angle so three faces are visible.
-  static const _viewX = -0.42;
+  static const _viewX = -0.45;
   static const _viewY = -0.55;
-  static const _light = _V3(-0.45, -0.65, 0.62);
+  static const _light = _V3(-0.45, -0.6, 0.66);
 
-  _V3 _xf(_V3 p) => p.rotY(b).rotX(a).rotY(_viewY).rotX(_viewX);
+  static const _ivory = Color(0xFFFBF8F1);
+  static const _edge = Color(0xFFD9D1C2);
+  static const _pip = Color(0xFF1B1B1F);
+  static const _pipRed = Color(0xFFC8102E);
+
+  _V3 _xf(_V3 p) =>
+      p.rotY(b).rotX(a).rotY(_viewY * view).rotX(_viewX * view);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final half = size.width * 0.28;
-    final centre = Offset(size.width / 2, size.height * 0.45 - bounce);
-    const dist = 5.0;
+    final half = size.width * 0.3;
+    final centre = Offset(size.width / 2, size.height * 0.46 - bounce);
+    const dist = 6.0;
 
     Offset proj(_V3 p) {
       final k = dist / (dist - p.z);
       return centre + Offset(p.x, p.y) * half * k;
     }
 
-    // Ground shadow + glow.
-    final ground = Offset(size.width / 2, size.height * 0.45 + half * 1.35);
-    final shrink = 1 - (bounce / (size.width * 0.2)).clamp(0.0, 0.6);
+    // Glow + contact shadow on the "table".
+    final ground = Offset(size.width / 2, size.height * 0.46 + half * 1.2);
+    final lift = (bounce / (size.width * 0.2)).clamp(0.0, 0.6);
     if (glow > 0) {
       canvas.drawOval(
-        Rect.fromCenter(
-            center: ground, width: half * 3.4, height: half * 1.0),
+        Rect.fromCenter(center: ground, width: half * 3.2, height: half * 0.9),
         Paint()
-          ..color = NepaliColors.goldLight.withValues(alpha: glow * 0.6)
+          ..color = NepaliColors.goldLight.withValues(alpha: glow * 0.55)
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, half * 0.35),
       );
     }
     canvas.drawOval(
       Rect.fromCenter(
-          center: ground, width: half * 2.4 * shrink, height: half * 0.55 * shrink),
+          center: ground,
+          width: half * 2.3 * (1 - lift),
+          height: half * 0.5 * (1 - lift)),
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.45 * shrink)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, half * 0.18),
+        ..color = Colors.black.withValues(alpha: 0.5 * (1 - lift))
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, half * 0.16),
+    );
+
+    // Body silhouette: rounded hull of every projected corner. The gaps
+    // between the rounded faces show this darker ivory as rounded edges.
+    final corners = <Offset>[
+      for (final x in [-1.0, 1.0])
+        for (final y in [-1.0, 1.0])
+          for (final z in [-1.0, 1.0]) proj(_xf(_V3(x, y, z))),
+    ];
+    final hull = _roundedPolygon(_convexHull(corners), 0.22);
+    final hullBounds = hull.getBounds();
+    canvas.drawPath(
+      hull,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: dimmed
+              ? const [Color(0xFFE2DCD0), Color(0xFFB9B1A3)]
+              : const [Color(0xFFF1EBDF), _edge, Color(0xFFB8AE9C)],
+        ).createShader(hullBounds),
     );
 
     // Visible faces, far to near.
-    final visible = <(_Face, _V3, double)>[];
+    final visible = <(_Face, _V3)>[];
     for (final f in _faces) {
       final n = _xf(f.n);
-      if (n.z > 0.01) visible.add((f, n, n.z));
+      if (n.z > 0.02) visible.add((f, n));
     }
-    visible.sort((x, y) => x.$3.compareTo(y.$3));
+    visible.sort((x, y) => x.$2.z.compareTo(y.$2.z));
 
-    const l = _light;
-    final ll = math.sqrt(l.dot(l));
-    for (final (face, n, _) in visible) {
-      final corners = [
-        face.n + face.u * -1 + face.v * -1,
-        face.n + face.u * 1 + face.v * -1,
-        face.n + face.u * 1 + face.v * 1,
-        face.n + face.u * -1 + face.v * 1,
+    final ll = math.sqrt(_light.dot(_light));
+    for (final (face, n) in visible) {
+      final diffuse = (n.dot(_light) / ll).clamp(0.0, 1.0);
+      final shade = 0.62 + 0.38 * diffuse;
+      // Faces seen edge-on fade into the bevel instead of popping.
+      final facing = ((n.z - 0.02) / 0.25).clamp(0.0, 1.0);
+
+      // Face = square inset a little so the rounded edge shows around it.
+      const inset = 0.86;
+      final quad = [
+        face.n + face.u * -inset + face.v * -inset,
+        face.n + face.u * inset + face.v * -inset,
+        face.n + face.u * inset + face.v * inset,
+        face.n + face.u * -inset + face.v * inset,
       ].map((p) => proj(_xf(p))).toList();
-
-      final diffuse = (n.dot(l) / ll).clamp(0.0, 1.0);
-      final shade = 0.58 + 0.42 * diffuse;
-      final base = dimmed ? const Color(0xFFE6E0D6) : const Color(0xFFFFFDF6);
-      final faceColor = Color.lerp(Colors.black, base, shade)!;
-
-      final path = Path()..addPolygon(corners, true);
+      final path = _roundedPolygon(quad, 0.2);
       final bounds = path.getBounds();
+      final base = dimmed ? const Color(0xFFEAE4D8) : _ivory;
+      final lit = Color.lerp(Colors.black, base, shade)!;
       canvas.drawPath(
         path,
         Paint()
@@ -298,52 +338,112 @@ class _DicePainter extends CustomPainter {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color.lerp(faceColor, Colors.white, 0.25)!,
-              faceColor,
+              Color.lerp(lit, Colors.white, 0.35)!.withValues(alpha: facing),
+              lit.withValues(alpha: facing),
             ],
           ).createShader(bounds),
       );
-      canvas.drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeJoin = StrokeJoin.round
-          ..strokeWidth = half * 0.07
-          ..color = const Color(0xFFBFB6A6),
-      );
 
-      // Pips.
-      final pips = _pipLayout[face.value]!;
-      final pipR = face.value == 1 ? 0.3 : 0.19;
-      final pipColor =
-          face.value == 1 ? NepaliColors.primary : const Color(0xFF3A0D12);
-      for (final p in pips) {
-        final centre3 = face.n * 1.001 + face.u * p.dx + face.v * p.dy;
-        final pts = <Offset>[];
-        for (var i = 0; i < 14; i++) {
-          final ang = i / 14 * math.pi * 2;
-          final q = centre3 +
-              face.u * (math.cos(ang) * pipR) +
-              face.v * (math.sin(ang) * pipR);
-          pts.add(proj(_xf(q)));
+      // Sunken pips.
+      final isOne = face.value == 1;
+      final r = isOne ? 0.3 : 0.19;
+      final colour = isOne ? _pipRed : _pip;
+      for (final p in _pips[face.value]!) {
+        final c3 = face.n * 1.001 + face.u * p.dx + face.v * p.dy;
+        final ring = <Offset>[];
+        for (var i = 0; i < 18; i++) {
+          final t = i / 18 * math.pi * 2;
+          ring.add(proj(_xf(c3 +
+              face.u * (math.cos(t) * r) +
+              face.v * (math.sin(t) * r))));
         }
-        final pipPath = Path()..addPolygon(pts, true);
+        final pipPath = Path()..addPolygon(ring, true);
+        final pb = pipPath.getBounds();
         canvas.drawPath(
-            pipPath,
-            Paint()
-              ..color = Color.lerp(Colors.black, pipColor, 0.6 + 0.4 * shade)!);
+          pipPath,
+          Paint()
+            ..shader = RadialGradient(
+              center: const Alignment(-0.35, -0.4),
+              radius: 0.9,
+              colors: [
+                Color.lerp(colour, Colors.black, 0.45)!,
+                colour,
+                Color.lerp(colour, Colors.white, 0.18)!,
+              ],
+              stops: const [0.0, 0.7, 1.0],
+            ).createShader(pb)
+            ..color = colour.withValues(alpha: facing),
+        );
+        // Light catching the lower rim of the dimple.
+        canvas.drawArc(
+          pb.deflate(pb.width * 0.08),
+          math.pi * 0.1,
+          math.pi * 0.8,
+          false,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = math.max(0.8, pb.width * 0.08)
+            ..color = Colors.white.withValues(alpha: 0.45 * facing),
+        );
       }
     }
 
-    // Specular sheen across the whole cube.
-    final top = proj(_xf(const _V3(-0.5, -1, -0.5)));
+    // Soft specular sheen on the upper-left of the body.
     canvas.drawCircle(
-      top,
-      half * 0.35,
+      hullBounds.topLeft + Offset(hullBounds.width * 0.3, hullBounds.height * 0.25),
+      half * 0.45,
       Paint()
         ..color = Colors.white.withValues(alpha: 0.12)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, half * 0.25),
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, half * 0.3),
     );
+  }
+
+  /// Andrew's monotone chain convex hull.
+  static List<Offset> _convexHull(List<Offset> pts) {
+    final p = [...pts]..sort((a, b) =>
+        a.dx != b.dx ? a.dx.compareTo(b.dx) : a.dy.compareTo(b.dy));
+    double cross(Offset o, Offset a, Offset b) =>
+        (a.dx - o.dx) * (b.dy - o.dy) - (a.dy - o.dy) * (b.dx - o.dx);
+    final lower = <Offset>[];
+    for (final q in p) {
+      while (lower.length >= 2 &&
+          cross(lower[lower.length - 2], lower.last, q) <= 0) {
+        lower.removeLast();
+      }
+      lower.add(q);
+    }
+    final upper = <Offset>[];
+    for (final q in p.reversed) {
+      while (upper.length >= 2 &&
+          cross(upper[upper.length - 2], upper.last, q) <= 0) {
+        upper.removeLast();
+      }
+      upper.add(q);
+    }
+    lower.removeLast();
+    upper.removeLast();
+    return [...lower, ...upper];
+  }
+
+  /// Polygon with each corner rounded off by [fraction] of its edges.
+  static Path _roundedPolygon(List<Offset> pts, double fraction) {
+    final n = pts.length;
+    final path = Path();
+    if (n < 3) return path;
+    for (var i = 0; i < n; i++) {
+      final prev = pts[(i - 1 + n) % n];
+      final cur = pts[i];
+      final next = pts[(i + 1) % n];
+      final a = Offset.lerp(cur, prev, fraction)!;
+      final b = Offset.lerp(cur, next, fraction)!;
+      if (i == 0) {
+        path.moveTo(a.dx, a.dy);
+      } else {
+        path.lineTo(a.dx, a.dy);
+      }
+      path.quadraticBezierTo(cur.dx, cur.dy, b.dx, b.dy);
+    }
+    return path..close();
   }
 
   @override
