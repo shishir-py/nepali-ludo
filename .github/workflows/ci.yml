@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  # Lets CI be started by hand: gh workflow run CI --ref main
+  workflow_dispatch:
   push:
     branches: [ main, develop ]
   pull_request:
