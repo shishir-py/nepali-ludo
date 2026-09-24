@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
 import '../audio/audio_manager.dart';
 import '../storage/game_storage.dart';
 import '../storage/settings_storage.dart';
@@ -12,11 +15,18 @@ import 'engine/player.dart';
 import 'engine/token.dart';
 
 /// ChangeNotifier that owns the GameEngine and drives the UI.
+///
+/// Moves are animated: before the engine applies a move, the token is
+/// walked cell-by-cell through [positionOverrides] so the board can hop it
+/// along the track, with a sound on every step.
 class GameProvider extends ChangeNotifier {
   GameEngine? _engine;
   final AiEngine _ai = AiEngine();
   StreamSubscription<GameEvent>? _sub;
   AppSettings _settings = const AppSettings();
+
+  /// Delay between hops when a pawn walks along the track.
+  static const Duration hopDelay = Duration(milliseconds: 190);
 
   // Latest event for announcements / reactions
   GameEvent? lastEvent;
@@ -28,14 +38,40 @@ class GameProvider extends ChangeNotifier {
   bool _isTokenMoving = false;
   bool get isTokenMoving => _isTokenMoving;
 
+  bool _aiBusy = false;
+
   String? _announcement;
   String? get announcement => _announcement;
+  Timer? _announcementTimer;
+
+  final Map<String, int> _positionOverrides = {};
+
+  /// Positions to display while a move is being animated,
+  /// keyed by `'$playerIndex:$tokenId'`.
+  Map<String, int> get positionOverrides =>
+      Map.unmodifiable(_positionOverrides);
 
   // ─────────────────────────────────────────────────────────────
 
   GameEngine? get engine => _engine;
   GameState? get state => _engine?.state;
   bool get hasGame => _engine != null;
+
+  /// Tokens of the current player that the human may tap right now.
+  Set<int> get movableTokenIds {
+    final s = state;
+    if (s == null ||
+        !s.diceRolled ||
+        currentPlayerIsAi ||
+        _isTokenMoving ||
+        s.phase == GamePhase.finished) {
+      return const {};
+    }
+    return s.currentPlayer
+        .moveableTokens(s.lastDiceValue)
+        .map((t) => t.id)
+        .toSet();
+  }
 
   // ─────────────────────────────────────────────────────────────
   // Initialisation
@@ -50,6 +86,9 @@ class GameProvider extends ChangeNotifier {
   }) {
     _sub?.cancel();
     _engine?.dispose();
+    _positionOverrides.clear();
+    _isTokenMoving = false;
+    _isDiceRolling = false;
 
     final state = GameState(players: players);
     _engine = GameEngine(state: state);
@@ -64,6 +103,7 @@ class GameProvider extends ChangeNotifier {
     if (engine == null) return;
     _sub?.cancel();
     _engine?.dispose();
+    _positionOverrides.clear();
     _engine = engine;
     _sub = _engine!.events.listen(_onEvent);
     notifyListeners();
@@ -76,44 +116,85 @@ class GameProvider extends ChangeNotifier {
 
   Future<void> rollDice() async {
     if (_engine == null) return;
-    if (state!.diceRolled) return;
+    if (state!.diceRolled || _isDiceRolling || _isTokenMoving) return;
     if (currentPlayerIsAi) return; // AI rolls itself
 
     _isDiceRolling = true;
     notifyListeners();
 
-    await AudioManager().playDiceRoll();
-    await Future.delayed(const Duration(milliseconds: 600));
+    unawaited(AudioManager().playDiceRoll());
+    await Future.delayed(const Duration(milliseconds: 750));
+    if (_engine == null) return;
 
     _engine!.rollDice();
 
     _isDiceRolling = false;
     notifyListeners();
 
+    // Auto-move when there is effectively only one choice
+    // (e.g. one movable token, or several identical tokens in the yard).
+    final s = state!;
+    if (s.diceRolled && !currentPlayerIsAi) {
+      final options = s.currentPlayer.moveableTokens(s.lastDiceValue);
+      final distinct = options.map((t) => t.position).toSet();
+      if (options.isNotEmpty && distinct.length == 1) {
+        await Future.delayed(const Duration(milliseconds: 380));
+        if (_engine != null && state!.diceRolled && !_isTokenMoving) {
+          await moveToken(options.first);
+          return;
+        }
+      }
+    }
+
     _scheduleAiMoveIfNeeded();
   }
 
   Future<void> moveToken(Token token) async {
     if (_engine == null) return;
-    if (!state!.diceRolled) return;
+    if (!state!.diceRolled || _isTokenMoving) return;
     if (currentPlayerIsAi) return;
+    if (!token.canMove(state!.lastDiceValue)) return;
 
-    _isTokenMoving = true;
-    notifyListeners();
-
-    _engine!.moveToken(state!.currentPlayerIndex, token);
-
-    await AudioManager().playTokenMove();
-    if (_settings.vibrationEnabled) {
-      HapticFeedback.lightImpact();
-    }
-
-    await Future.delayed(const Duration(milliseconds: 400));
-    _isTokenMoving = false;
-    notifyListeners();
+    await _animateAndMove(state!.currentPlayerIndex, token);
 
     await _persistGame();
     _scheduleAiMoveIfNeeded();
+  }
+
+  /// Walk [token] cell by cell, then let the engine apply the move
+  /// (captures, extra turns, wins, …).
+  Future<void> _animateAndMove(int playerIndex, Token token) async {
+    _isTokenMoving = true;
+    final key = '$playerIndex:${token.id}';
+    final dice = state!.lastDiceValue;
+    final from = token.position;
+
+    final steps = <int>[];
+    if (from == -1) {
+      steps.add(0);
+    } else {
+      for (var i = 1; i <= dice; i++) {
+        steps.add(math.min(from + i, 57));
+      }
+    }
+
+    for (final pos in steps) {
+      _positionOverrides[key] = pos;
+      notifyListeners();
+      unawaited(from == -1
+          ? AudioManager().playTokenEnter()
+          : AudioManager().playTokenMove());
+      if (_settings.vibrationEnabled) HapticFeedback.selectionClick();
+      await Future.delayed(hopDelay);
+      if (_engine == null) return;
+    }
+
+    _positionOverrides.remove(key);
+    _engine!.moveToken(playerIndex, token);
+    _isTokenMoving = false;
+    notifyListeners();
+    // Give capture / finish animations a moment before the next turn.
+    await Future.delayed(const Duration(milliseconds: 250));
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -124,41 +205,55 @@ class GameProvider extends ChangeNotifier {
       state != null && state!.currentPlayer.type == PlayerType.ai;
 
   void _scheduleAiMoveIfNeeded() {
-    if (!currentPlayerIsAi) return;
-    Future.delayed(const Duration(milliseconds: 900), _doAiTurn);
+    if (_aiBusy || !currentPlayerIsAi) return;
+    if (state!.phase == GamePhase.finished) return;
+    _aiBusy = true;
+    Future.delayed(const Duration(milliseconds: 800), () async {
+      try {
+        await _doAiTurn();
+      } finally {
+        _aiBusy = false;
+      }
+      _scheduleAiMoveIfNeeded();
+    });
   }
 
   Future<void> _doAiTurn() async {
     if (_engine == null) return;
-    if (!currentPlayerIsAi) return;
+    if (!currentPlayerIsAi || state!.phase == GamePhase.finished) return;
+    final aiIndex = state!.currentPlayerIndex;
 
-    // Roll dice
-    _isDiceRolling = true;
-    notifyListeners();
-    await AudioManager().playDiceRoll();
-    await Future.delayed(const Duration(milliseconds: 700));
-    final value = _engine!.rollDice();
-    _isDiceRolling = false;
-    notifyListeners();
-
-    if (state!.consecutiveSixes >= 3) return; // forfeit handled by engine
-
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    // Choose and execute move
-    final token = _ai.chooseMove(_engine!, state!.currentPlayerIndex, value);
-    if (token != null) {
-      _isTokenMoving = true;
+    // Roll dice (unless a restored game already has this turn's roll).
+    final int value;
+    if (state!.diceRolled) {
+      value = state!.lastDiceValue;
+    } else {
+      _isDiceRolling = true;
       notifyListeners();
-      _engine!.moveToken(state!.currentPlayerIndex, token);
-      await AudioManager().playTokenMove();
-      await Future.delayed(const Duration(milliseconds: 500));
-      _isTokenMoving = false;
+      unawaited(AudioManager().playDiceRoll());
+      await Future.delayed(const Duration(milliseconds: 750));
+      if (_engine == null) return;
+      value = _engine!.rollDice();
+      _isDiceRolling = false;
       notifyListeners();
     }
 
+    // If the roll forfeited the turn or had no moves, the engine has
+    // already moved on.
+    if (state!.currentPlayerIndex != aiIndex || !state!.diceRolled) {
+      await _persistGame();
+      return;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 550));
+    if (_engine == null) return;
+
+    final token = _ai.chooseMove(_engine!, aiIndex, value);
+    if (token != null) {
+      await _animateAndMove(aiIndex, token);
+    }
+
     await _persistGame();
-    _scheduleAiMoveIfNeeded();
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -172,7 +267,7 @@ class GameProvider extends ChangeNotifier {
     switch (event.type) {
       case GameEventType.tokenCaptured:
         AudioManager().playKill();
-        if (_settings.vibrationEnabled) HapticFeedback.mediumImpact();
+        if (_settings.vibrationEnabled) HapticFeedback.heavyImpact();
         break;
       case GameEventType.landedOnSafe:
         AudioManager().playSafe();
@@ -183,9 +278,15 @@ class GameProvider extends ChangeNotifier {
         break;
       case GameEventType.playerWon:
         AudioManager().playWin();
+        if (_settings.vibrationEnabled) HapticFeedback.heavyImpact();
         break;
       case GameEventType.tokenFinished:
+        // Only when a pawn actually reaches the centre, not when it merely
+        // turns into its home column.
         AudioManager().playTokenHome();
+        break;
+      case GameEventType.noValidMove:
+        _showAnnouncement('😅 चाल छैन — अर्को पालो');
         break;
       default:
         break;
@@ -198,7 +299,8 @@ class GameProvider extends ChangeNotifier {
     if (message == null) return;
     _announcement = message;
     notifyListeners();
-    Future.delayed(const Duration(seconds: 3), () {
+    _announcementTimer?.cancel();
+    _announcementTimer = Timer(const Duration(milliseconds: 1800), () {
       _announcement = null;
       notifyListeners();
     });
@@ -222,6 +324,9 @@ class GameProvider extends ChangeNotifier {
     _sub?.cancel();
     _engine?.dispose();
     _engine = null;
+    _positionOverrides.clear();
+    _isTokenMoving = false;
+    _isDiceRolling = false;
     notifyListeners();
   }
 
@@ -229,6 +334,7 @@ class GameProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _announcementTimer?.cancel();
     _sub?.cancel();
     _engine?.dispose();
     super.dispose();

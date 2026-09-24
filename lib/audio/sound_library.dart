@@ -23,6 +23,7 @@ library;
 enum SoundEvent {
   dice, // dice roll
   move, // token move
+  enter, // token leaves the yard
   kill, // token captured
   safe, // landed on safe cell
   six, // rolled a 6
@@ -38,6 +39,7 @@ enum SoundEvent {
 const Map<SoundEvent, int> _variantCount = {
   SoundEvent.dice: 6,
   SoundEvent.move: 4,
+  SoundEvent.enter: 0, // uses the extra files below
   SoundEvent.kill: 10, // ← user asked for 10 kill sounds
   SoundEvent.safe: 10, // ← user asked for 10 safe sounds
   SoundEvent.six: 6,
@@ -56,6 +58,8 @@ extension SoundEventLabel on SoundEvent {
         return '🎲 पासा घुमाउँदा';
       case SoundEvent.move:
         return '🚶 Token सर्दा';
+      case SoundEvent.enter:
+        return '🚀 गोटी बाहिर निस्कँदा';
       case SoundEvent.kill:
         return '💥 काट्ने आवाज';
       case SoundEvent.safe:
@@ -134,16 +138,55 @@ class SoundLibrary {
   ///   [kill_1.mp3 (default), kill_2.mp3, …, kill_10.mp3]
   static final Map<SoundEvent, List<SoundOption>> builtIn = {
     for (final event in SoundEvent.values)
-      event: List.generate(event.variantCount, (i) {
-        final n = i + 1;
-        return SoundOption(
-          label: '${event._shortLabel} #$n',
-          source: 'sounds/${event.slug}_$n.mp3',
-          isAsset: true,
-          isDefault: n == 1,
-        );
-      }),
+      event: [
+        // Hand-picked files come first; the first one is the default.
+        for (var i = 0; i < (extras[event] ?? const []).length; i++)
+          SoundOption(
+            label: extras[event]![i].$1,
+            source: extras[event]![i].$2,
+            isAsset: true,
+            isDefault: i == 0,
+          ),
+        // Then the generated numbered variants.
+        ...List.generate(event.variantCount, (i) {
+          final n = i + 1;
+          return SoundOption(
+            label: '${event._shortLabel} #$n',
+            source: 'sounds/${event.slug}_$n.mp3',
+            isAsset: true,
+            isDefault: n == 1 && (extras[event] ?? const []).isEmpty,
+          );
+        }),
+      ],
   };
+
+  /// Extra sound files added to the project by hand (label, asset path).
+  /// Listed before the numbered variants; the first one becomes the default
+  /// for that event. Remove an entry to fall back to `<event>_1.mp3`.
+  static const Map<SoundEvent, List<(String, String)>> extras = {
+    // coins/dic_rolling.mp3: 0.73 s rattle, matches the dice animation.
+    SoundEvent.dice: [
+      ('पासा घुम्दै (coins)', 'sounds/coins/dic_rolling.mp3'),
+      ('पासा (छोटो)', 'sounds/dice-roll-sound.mp3'),
+    ],
+    // coins/coin_kill.mp3: short 0.37 s hit when a pawn is captured.
+    SoundEvent.kill: [
+      ('गोटी काटियो (coins)', 'sounds/coins/coin_kill.mp3'),
+    ],
+    // game/coin_in_game.mp3: pawn comes *into* the game from the yard.
+    SoundEvent.enter: [
+      ('गोटी खेलमा (game)', 'sounds/game/coin_in_game.mp3'),
+    ],
+    // coins/coin_out.mp3: pawn goes *out* of the game — it reached home.
+    SoundEvent.home: [
+      ('गोटी घर पुग्यो (coins)', 'sounds/coins/coin_out.mp3'),
+    ],
+    // game/game_winner.mp3: 9 s victory tune.
+    SoundEvent.win: [
+      ('विजेता (game)', 'sounds/game/game_winner.mp3'),
+    ],
+  };
+
 
   /// The default option (variant #1) for [event].
   static SoundOption defaultFor(SoundEvent event) {
@@ -169,6 +212,8 @@ extension _SoundEventShortLabel on SoundEvent {
         return 'पासा';
       case SoundEvent.move:
         return 'सर्ने';
+      case SoundEvent.enter:
+        return 'बाहिर';
       case SoundEvent.kill:
         return 'काट';
       case SoundEvent.safe:

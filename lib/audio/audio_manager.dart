@@ -17,7 +17,11 @@ class AudioManager {
   static AudioManager get instance => _instance;
   AudioManager._();
 
-  final AudioPlayer _sfxPlayer = AudioPlayer();
+  /// A small pool so overlapping effects (hop + kill + six…) don't cut
+  /// each other off.
+  final List<AudioPlayer> _sfxPool = List.generate(5, (_) => AudioPlayer());
+  int _next = 0;
+  bool _musicPausedByLifecycle = false;
   final AudioPlayer _previewPlayer = AudioPlayer(); // for the picker screen
   final AudioPlayer _musicPlayer = AudioPlayer();
   AppSettings _settings = const AppSettings();
@@ -30,7 +34,7 @@ class AudioManager {
 
   Future<void> init(AppSettings settings) async {
     _settings = settings;
-    _sfxPlayer.setVolume(settings.volume);
+    _setSfxVolume(settings.volume);
     _musicPlayer.setVolume(settings.volume * 0.4);
     if (settings.musicEnabled) {
       await _startBackgroundMusic();
@@ -51,13 +55,13 @@ class AudioManager {
 
   void setVolume(double v) {
     _settings = _settings.copyWith(volume: v);
-    _sfxPlayer.setVolume(v);
+    _setSfxVolume(v);
     _musicPlayer.setVolume(v * 0.4);
   }
 
   Future<void> updateSettings(AppSettings settings) async {
     _settings = settings;
-    _sfxPlayer.setVolume(settings.volume);
+    _setSfxVolume(settings.volume);
     _musicPlayer.setVolume(settings.volume * 0.4);
     if (!settings.musicEnabled) {
       await _musicPlayer.stop();
@@ -99,14 +103,17 @@ class AudioManager {
     if (!_settings.soundEnabled) return;
     final option = await _resolve(event);
     if (option.source.isEmpty) return;
+    final player = _sfxPool[_next];
+    _next = (_next + 1) % _sfxPool.length;
     try {
-      await _sfxPlayer.play(_asSource(option));
+      await player.stop();
+      await player.play(_asSource(option), volume: _settings.volume);
     } catch (_) {
       // Assigned variant missing — try the event's built-in default.
       final fallback = SoundLibrary.defaultFor(event);
       if (fallback.source.isNotEmpty && fallback.id != option.id) {
         try {
-          await _sfxPlayer.play(_asSource(fallback));
+          await player.play(_asSource(fallback), volume: _settings.volume);
         } catch (_) {}
       }
     }
@@ -147,6 +154,7 @@ class AudioManager {
 
   Future<void> playDiceRoll() => _playEvent(SoundEvent.dice);
   Future<void> playTokenMove() => _playEvent(SoundEvent.move);
+  Future<void> playTokenEnter() => _playEvent(SoundEvent.enter);
   Future<void> playKill() => _playEvent(SoundEvent.kill);
   Future<void> playCapture() => playKill(); // legacy alias
   Future<void> playSafe() => _playEvent(SoundEvent.safe);
@@ -156,8 +164,34 @@ class AudioManager {
   Future<void> playReaction() => _playEvent(SoundEvent.reaction);
   Future<void> playTokenHome() => _playEvent(SoundEvent.home);
 
+  void _setSfxVolume(double v) {
+    for (final p in _sfxPool) {
+      p.setVolume(v);
+    }
+  }
+
+  /// Pause music when the app goes to the background, resume on return.
+  void onAppPaused() {
+    if (_settings.musicEnabled) {
+      _musicPausedByLifecycle = true;
+      _musicPlayer.pause();
+    }
+  }
+
+  void onAppResumed() {
+    if (_musicPausedByLifecycle && _settings.musicEnabled) {
+      _musicPausedByLifecycle = false;
+      _musicPlayer.resume();
+    }
+  }
+
+  bool get soundEnabled => _settings.soundEnabled;
+  bool get musicEnabled => _settings.musicEnabled;
+
   void dispose() {
-    _sfxPlayer.dispose();
+    for (final p in _sfxPool) {
+      p.dispose();
+    }
     _previewPlayer.dispose();
     _musicPlayer.dispose();
   }

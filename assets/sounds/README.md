@@ -50,3 +50,23 @@ Other royalty-free sources: [freesound.org](https://freesound.org), [mixkit.co](
 - All files must be `.mp3`
 - Volume is controlled globally in Settings — the app plays SFX at your chosen volume and music at 40% of it
 - Once files are in this folder, run `flutter pub get` to have them bundled into the APK
+
+## Built-in sounds (included)
+
+Every slot above ships with an original sound that was synthesised from
+scratch by `tools/generate_sounds.py` (oscillators, noise and envelopes, no
+samples), so they are free to distribute with this open-source project.
+To regenerate or tweak them:
+
+```bash
+pip install numpy scipy        # ffmpeg must also be installed
+python3 tools/generate_sounds.py
+cp tools/sounds/*.mp3 assets/sounds/
+```
+
+The app icon and `assets/images/logo.png` come from `tools/generate_icon.py`.
+
+Dropping your own file with the same name (e.g. `kill_3.mp3`) replaces the
+built-in one. Clips downloaded from sites like myinstants.com are often
+copyrighted, so check the licence before committing them to a public repo;
+players can always add their own sounds privately from the in-app picker.

@@ -1,11 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'audio/audio_manager.dart';
 import 'core/theme/app_theme.dart';
 import 'game/game_provider.dart';
 import 'ui/screens/splash_screen.dart';
 
-class NepaliLudoApp extends StatelessWidget {
+class NepaliLudoApp extends StatefulWidget {
   const NepaliLudoApp({super.key});
+
+  @override
+  State<NepaliLudoApp> createState() => _NepaliLudoAppState();
+}
+
+class _NepaliLudoAppState extends State<NepaliLudoApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Don't keep playing music when the app is in the background.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      AudioManager.instance.onAppPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      AudioManager.instance.onAppResumed();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +47,6 @@ class NepaliLudoApp extends StatelessWidget {
         theme: AppTheme.light,
         home: const SplashScreen(),
         builder: (context, child) {
-          // Apply Noto Sans Devanagari as default font
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(
               textScaler: MediaQuery.textScalerOf(context)

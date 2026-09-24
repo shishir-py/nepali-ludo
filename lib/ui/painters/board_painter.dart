@@ -1,171 +1,375 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../game/engine/board_config.dart';
-import '../../game/engine/player.dart';
+import '../board/board_geometry.dart';
 
-/// Custom painter for the 15×15 Ludo board.
-/// Draws the board grid, coloured zones, safe-cell stars, home column paths,
-/// and all token pieces.
+/// Paints the static, flat Ludo board with raised "3D" tiles, a carved
+/// wooden frame with a Dhaka-weave band, sunken yard wells and a golden
+/// Nepali sun in the centre.
+///
+/// The board is painted flat; [BoardView] tilts it in perspective and draws
+/// the pawns on top with their own painter, so this never needs to repaint
+/// during play.
 class BoardPainter extends CustomPainter {
-  final List<Player> players;
-  final Set<int> highlightedTokenIds; // token ids the current player can move
-  final int currentPlayerIndex;
+  const BoardPainter();
 
-  BoardPainter({
-    required this.players,
-    this.highlightedTokenIds = const {},
-    required this.currentPlayerIndex,
-  });
-
-  static const int _gridSize = 15;
+  static Color _shade(Color c, double amount) {
+    final hsl = HSLColor.fromColor(c);
+    return hsl
+        .withLightness((hsl.lightness + amount).clamp(0.0, 1.0))
+        .toColor();
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cellSize = size.width / _gridSize;
-
-    _drawBoardBackground(canvas, size, cellSize);
-    _drawCells(canvas, cellSize);
-    _drawHomeColumnPaths(canvas, cellSize);
-    _drawCentreTriangles(canvas, cellSize);
-    _drawYardAreas(canvas, cellSize);
-    _drawSafeStars(canvas, cellSize);
-    _drawTokens(canvas, cellSize);
+    final g = BoardGeometry(size.width);
+    _drawFrame(canvas, g);
+    _drawTrackTiles(canvas, g);
+    for (var p = 0; p < 4; p++) {
+      _drawYard(canvas, g, p);
+    }
+    _drawCentre(canvas, g);
+    _drawSafeStars(canvas, g);
+    _drawEntryArrows(canvas, g);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Board background
-  // ─────────────────────────────────────────────────────────────
+  // ─── Frame ───────────────────────────────────────────────────────────
 
-  void _drawBoardBackground(Canvas canvas, Size size, double cellSize) {
-    final paint = Paint()
-      ..color = NepaliColors.boardBackground
-      ..style = PaintingStyle.fill;
+  void _drawFrame(Canvas canvas, BoardGeometry g) {
+    final outer = Offset.zero & Size(g.size, g.size);
+    final r = Radius.circular(g.size * 0.03);
+
+    // Carved wood.
     canvas.drawRRect(
-      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(12)),
-      paint,
+      RRect.fromRectAndRadius(outer, r),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF8A4B22), Color(0xFF5B2C10), Color(0xFF7A3E18)],
+        ).createShader(outer),
     );
-
-    // Dhaka-inspired decorative border
-    final borderPaint = Paint()
-      ..color = NepaliColors.boardBorder
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = cellSize * 0.06;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(cellSize * 0.1, cellSize * 0.1,
-            size.width - cellSize * 0.2, size.height - cellSize * 0.2),
-        const Radius.circular(10),
-      ),
-      borderPaint,
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Grid cells
-  // ─────────────────────────────────────────────────────────────
-
-  void _drawCells(Canvas canvas, double cellSize) {
-    for (int row = 0; row < _gridSize; row++) {
-      for (int col = 0; col < _gridSize; col++) {
-        _drawCell(canvas, row, col, cellSize);
-      }
-    }
-  }
-
-  void _drawCell(Canvas canvas, int row, int col, double cellSize) {
-    final rect = _cellRect(row, col, cellSize);
-    final region = BoardConfig.cellColorRegion(row, col);
-
-    Color fillColor;
-    if (region >= 0) {
-      fillColor = NepaliColors.playerColor(region).withValues(alpha: 0.55);
-    } else if (region == -2) {
-      fillColor = Colors.transparent; // centre drawn separately
-    } else {
-      fillColor = NepaliColors.neutralCell;
+    // Wood grain.
+    final grain = Paint()
+      ..color = Colors.black.withValues(alpha: 0.10)
+      ..strokeWidth = g.size * 0.002;
+    for (var i = 0; i < 40; i++) {
+      final y = g.size * (i / 40) + sin(i * 1.7) * 2;
+      canvas.drawLine(Offset(0, y), Offset(g.size, y + sin(i) * 4), grain);
     }
 
-    final paint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
-    canvas.drawRect(rect, paint);
-
-    // Cell border
-    final borderPaint = Paint()
-      ..color = NepaliColors.boardBorder.withValues(alpha: 0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-    canvas.drawRect(rect, borderPaint);
-  }
-
-  Rect _cellRect(int row, int col, double cellSize) {
-    return Rect.fromLTWH(col * cellSize, row * cellSize, cellSize, cellSize);
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Home-column paths (the coloured channel leading to centre)
-  // ─────────────────────────────────────────────────────────────
-
-  void _drawHomeColumnPaths(Canvas canvas, double cellSize) {
-    // Already painted by _drawCells via cellColorRegion, but add richer tint.
-    final columns = [
-      BoardConfig.redHomeColumn,
-      BoardConfig.greenHomeColumn,
-      BoardConfig.yellowHomeColumn,
-      BoardConfig.blueHomeColumn,
-    ];
-    for (int pi = 0; pi < 4; pi++) {
-      final col = columns[pi];
-      final paint = Paint()
-        ..color = NepaliColors.playerColor(pi).withValues(alpha: 0.72)
-        ..style = PaintingStyle.fill;
-      for (final p in col) {
-        canvas.drawRect(_cellRect(p.x, p.y, cellSize), paint);
-      }
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Centre (rainbow triangles)
-  // ─────────────────────────────────────────────────────────────
-
-  void _drawCentreTriangles(Canvas canvas, double cellSize) {
-    final cx = 7 * cellSize + cellSize / 2;
-    final cy = 7 * cellSize + cellSize / 2;
-    final r = cellSize * 1.5;
-
+    // Dhaka-weave band: alternating red / gold / green triangles.
+    final band = g.frame * 0.55;
+    final bandPaint = Paint();
     final colors = [
-      NepaliColors.redPlayer,
-      NepaliColors.greenPlayer,
-      NepaliColors.yellowPlayer,
-      NepaliColors.bluePlayer,
+      NepaliColors.dhakaRed,
+      NepaliColors.goldLight,
+      NepaliColors.dhakaGreen,
+      NepaliColors.goldLight,
     ];
-    final angles = [pi, pi / 2, 0, -pi / 2]; // pointing N/E/S/W
-
-    for (int i = 0; i < 4; i++) {
-      final angle = angles[i];
-      final path = Path()
-        ..moveTo(cx, cy)
-        ..lineTo(cx + r * cos(angle - pi / 4), cy + r * sin(angle - pi / 4))
-        ..lineTo(cx + r * cos(angle + pi / 4), cy + r * sin(angle + pi / 4))
-        ..close();
-      canvas.drawPath(path, Paint()..color = colors[i].withValues(alpha: 0.85));
+    final step = band;
+    var k = 0;
+    for (var x = g.frame * 0.25; x < g.size - g.frame * 0.25; x += step) {
+      bandPaint.color = colors[k++ % 4].withValues(alpha: 0.85);
+      // top
+      canvas.drawPath(
+          Path()
+            ..moveTo(x, g.frame * 0.22)
+            ..lineTo(x + step, g.frame * 0.22)
+            ..lineTo(x + step / 2, g.frame * 0.22 + band)
+            ..close(),
+          bandPaint);
+      // bottom
+      final by = g.size - g.frame * 0.22;
+      canvas.drawPath(
+          Path()
+            ..moveTo(x, by)
+            ..lineTo(x + step, by)
+            ..lineTo(x + step / 2, by - band)
+            ..close(),
+          bandPaint);
+      // left & right (reuse x as y)
+      canvas.drawPath(
+          Path()
+            ..moveTo(g.frame * 0.22, x)
+            ..lineTo(g.frame * 0.22, x + step)
+            ..lineTo(g.frame * 0.22 + band, x + step / 2)
+            ..close(),
+          bandPaint);
+      final rx = g.size - g.frame * 0.22;
+      canvas.drawPath(
+          Path()
+            ..moveTo(rx, x)
+            ..lineTo(rx, x + step)
+            ..lineTo(rx - band, x + step / 2)
+            ..close(),
+          bandPaint);
     }
 
-    // Centre star
-    final starPaint = Paint()
-      ..color = NepaliColors.gold
-      ..style = PaintingStyle.fill;
-    _drawStar(canvas, Offset(cx, cy), cellSize * 0.4, starPaint);
+    // Inner gold bead + recessed play area.
+    final inner = Rect.fromLTWH(
+        g.frame, g.frame, g.size - g.frame * 2, g.size - g.frame * 2);
+    canvas.drawRect(
+      inner.inflate(g.frame * 0.12),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE08A), Color(0xFFB8860B), Color(0xFFFFD35C)],
+        ).createShader(inner),
+    );
+    canvas.drawRect(inner, Paint()..color = const Color(0xFFEFE3C6));
+    // Inner shadow along top/left to make the play area look sunken.
+    canvas.drawRect(
+      inner,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: const Alignment(-0.9, -0.9),
+          colors: [Colors.black.withValues(alpha: 0.25), Colors.transparent],
+        ).createShader(inner),
+    );
   }
 
-  void _drawStar(Canvas canvas, Offset centre, double radius, Paint paint) {
+  // ─── Track tiles ─────────────────────────────────────────────────────
+
+  void _drawTrackTiles(Canvas canvas, BoardGeometry g) {
+    final startCells = {
+      for (var p = 0; p < 4; p++)
+        BoardConfig.mainTrack[BoardConfig.playerStartGlobalIndex[p]]: p,
+    };
+    // Main track (neutral or player start).
+    for (final cell in BoardConfig.mainTrack) {
+      final owner = startCells[cell];
+      _tile(
+        canvas,
+        g,
+        cell.x,
+        cell.y,
+        owner == null ? const Color(0xFFFFFBF2) : NepaliColors.playerColor(owner),
+      );
+    }
+    // Home columns.
+    for (var p = 0; p < 4; p++) {
+      for (final cell in BoardConfig.playerHomeColumn(p)) {
+        _tile(canvas, g, cell.x, cell.y, NepaliColors.playerColor(p));
+      }
+    }
+  }
+
+  /// A raised tile: darker "side" offset downwards, then a gradient top face
+  /// with a light bevel on the upper-left edge.
+  void _tile(Canvas canvas, BoardGeometry g, int row, int col, Color color) {
+    final rect = g.cellRect(row, col).deflate(g.cell * 0.05);
+    final radius = Radius.circular(g.cell * 0.14);
+    final depth = g.cell * 0.07;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.shift(Offset(0, depth)), radius),
+      Paint()..color = _shade(color, -0.28),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, radius),
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_shade(color, 0.10), color, _shade(color, -0.06)],
+        ).createShader(rect),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.deflate(g.cell * 0.03), radius),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = g.cell * 0.035
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.55),
+            Colors.white.withValues(alpha: 0.0),
+          ],
+        ).createShader(rect),
+    );
+  }
+
+  // ─── Yards ───────────────────────────────────────────────────────────
+
+  static const _yardOrigins = [
+    Point(0, 0), // red: rows 0-5, cols 0-5
+    Point(0, 9), // green
+    Point(9, 9), // yellow
+    Point(9, 0), // blue
+  ];
+
+  void _drawYard(Canvas canvas, BoardGeometry g, int p) {
+    final o = _yardOrigins[p];
+    final color = NepaliColors.playerColor(p);
+    final rect = g.blockRect(o.x, o.y, 6, 6).deflate(g.cell * 0.12);
+    final r = Radius.circular(g.cell * 0.55);
+    final depth = g.cell * 0.14;
+
+    // Block side + drop shadow.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.shift(Offset(0, depth * 1.6)), r),
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.25)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, g.cell * 0.2),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.shift(Offset(0, depth)), r),
+      Paint()..color = _shade(color, -0.3),
+    );
+    // Top face.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, r),
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.4, -0.5),
+          radius: 1.2,
+          colors: [_shade(color, 0.14), color, _shade(color, -0.12)],
+        ).createShader(rect),
+    );
+    // Subtle dhaka diamonds on the block.
+    final diamond = Paint()..color = Colors.white.withValues(alpha: 0.10);
+    for (var i = 0; i < 6; i++) {
+      for (var j = 0; j < 6; j++) {
+        if ((i + j).isOdd) continue;
+        final c = g.at(o.y + j + 0.5, o.x + i + 0.5);
+        final s = g.cell * 0.18;
+        canvas.drawPath(
+            Path()
+              ..moveTo(c.dx, c.dy - s)
+              ..lineTo(c.dx + s, c.dy)
+              ..lineTo(c.dx, c.dy + s)
+              ..lineTo(c.dx - s, c.dy)
+              ..close(),
+            diamond);
+      }
+    }
+
+    // Sunken cream well.
+    final well = g.blockRect(o.x + 1, o.y + 1, 4, 4).deflate(g.cell * 0.12);
+    final wr = Radius.circular(g.cell * 0.45);
+    canvas.drawRRect(RRect.fromRectAndRadius(well, wr),
+        Paint()..color = const Color(0xFFFFF7E6));
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(well, wr),
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: const Alignment(0, -0.55),
+          colors: [
+            Colors.black.withValues(alpha: 0.28),
+            Colors.black.withValues(alpha: 0.0),
+          ],
+        ).createShader(well),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(well, wr),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = g.cell * 0.06
+        ..color = NepaliColors.gold,
+    );
+
+    // Four token sockets.
+    for (final cell in BoardConfig.yardPositions[p]) {
+      final c = g.cellCentre(cell.x, cell.y);
+      final rad = g.cell * 0.42;
+      canvas.drawCircle(
+        c,
+        rad,
+        Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(0, -0.35),
+            colors: [
+              _shade(color, -0.25),
+              _shade(color, 0.05),
+              _shade(color, 0.25),
+            ],
+            stops: const [0.0, 0.75, 1.0],
+          ).createShader(Rect.fromCircle(center: c, radius: rad)),
+      );
+      canvas.drawCircle(
+        c,
+        rad,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = g.cell * 0.05
+          ..color = Colors.white.withValues(alpha: 0.7),
+      );
+    }
+  }
+
+  // ─── Centre ──────────────────────────────────────────────────────────
+
+  void _drawCentre(Canvas canvas, BoardGeometry g) {
+    final area = g.blockRect(6, 6, 3, 3);
+    final c = area.center;
+    final tl = area.topLeft, tr = area.topRight;
+    final bl = area.bottomLeft, br = area.bottomRight;
+    // Each player's triangle faces their home column:
+    // red ← left, green ↑ top, yellow → right, blue ↓ bottom.
+    final tris = [
+      [tl, bl], // red (left)
+      [tl, tr], // green (top)
+      [tr, br], // yellow (right)
+      [bl, br], // blue (bottom)
+    ];
+    for (var p = 0; p < 4; p++) {
+      final color = NepaliColors.playerColor(p);
+      final path = Path()
+        ..moveTo(c.dx, c.dy)
+        ..lineTo(tris[p][0].dx, tris[p][0].dy)
+        ..lineTo(tris[p][1].dx, tris[p][1].dy)
+        ..close();
+      final mid = Offset((tris[p][0].dx + tris[p][1].dx) / 2,
+          (tris[p][0].dy + tris[p][1].dy) / 2);
+      canvas.drawPath(
+        path,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment(
+              (mid.dx - c.dx) / (area.width / 2),
+              (mid.dy - c.dy) / (area.height / 2),
+            ),
+            end: Alignment.center,
+            colors: [_shade(color, 0.08), _shade(color, -0.18)],
+          ).createShader(area),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = g.cell * 0.04
+          ..color = Colors.white.withValues(alpha: 0.6),
+      );
+    }
+
+    // Golden Nepali sun medallion.
+    final rad = g.cell * 0.72;
+    canvas.drawCircle(
+      c + Offset(0, g.cell * 0.08),
+      rad,
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.35)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, g.cell * 0.12),
+    );
+    _sun(canvas, c, rad, const Color(0xFFB8860B));
+    _sun(canvas, c, rad * 0.9, null);
+  }
+
+  void _sun(Canvas canvas, Offset c, double r, Color? solid) {
     final path = Path();
-    for (int i = 0; i < 10; i++) {
-      final r = i.isEven ? radius : radius * 0.4;
-      final angle = (i * pi / 5) - pi / 2;
-      final p = Offset(centre.dx + r * cos(angle), centre.dy + r * sin(angle));
+    const points = 12;
+    for (var i = 0; i < points * 2; i++) {
+      final a = pi * i / points - pi / 2;
+      final rr = i.isEven ? r : r * 0.74;
+      final p = c + Offset(cos(a), sin(a)) * rr;
       if (i == 0) {
         path.moveTo(p.dx, p.dy);
       } else {
@@ -173,250 +377,90 @@ class BoardPainter extends CustomPainter {
       }
     }
     path.close();
+    final paint = Paint();
+    if (solid != null) {
+      paint.color = solid;
+    } else {
+      paint.shader = const RadialGradient(
+        center: Alignment(-0.3, -0.35),
+        colors: [Color(0xFFFFF3B0), Color(0xFFFFC93C), Color(0xFFD39A12)],
+      ).createShader(Rect.fromCircle(center: c, radius: r));
+    }
     canvas.drawPath(path, paint);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Yard areas (large coloured squares with inner white circle)
-  // ─────────────────────────────────────────────────────────────
+  // ─── Safe stars & arrows ─────────────────────────────────────────────
 
-  void _drawYardAreas(Canvas canvas, double cellSize) {
-    final yardBounds = [
-      const Rect.fromLTWH(0, 0, 6, 6), // Red
-      const Rect.fromLTWH(9, 0, 6, 6), // Green
-      const Rect.fromLTWH(9, 9, 6, 6), // Yellow
-      const Rect.fromLTWH(0, 9, 6, 6), // Blue
-    ];
+  void _drawSafeStars(Canvas canvas, BoardGeometry g) {
+    for (final idx in BoardConfig.safeCellsGlobal) {
+      final cell = BoardConfig.mainTrack[idx];
+      final c = g.cellCentre(cell.x, cell.y);
+      final isStart = BoardConfig.playerStartGlobalIndex.contains(idx);
+      _star(canvas, c + Offset(0, g.cell * 0.04), g.cell * 0.33,
+          Colors.black.withValues(alpha: 0.25));
+      _star(canvas, c, g.cell * 0.33,
+          isStart ? Colors.white : const Color(0xFFB8860B),
+          highlight: isStart ? null : const Color(0xFFFFE08A));
+    }
+  }
 
-    for (int pi = 0; pi < 4; pi++) {
-      final b = yardBounds[pi];
-      final rect = Rect.fromLTWH(b.left * cellSize, b.top * cellSize,
-          b.width * cellSize, b.height * cellSize);
-
-      // Background
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.5)),
-        Paint()..color = NepaliColors.playerColor(pi).withValues(alpha: 0.8),
-      );
-
-      // Inner white rounded square
-      final innerPadding = cellSize * 0.5;
-      final innerRect = rect.deflate(innerPadding);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(innerRect, Radius.circular(cellSize * 0.4)),
-        Paint()..color = Colors.white.withValues(alpha: 0.85),
-      );
-
-      // Decorative Dhaka-style border on yard
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.5)),
-        Paint()
-          ..color = NepaliColors.playerColor(pi).withValues(alpha: 1.0)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = cellSize * 0.08,
-      );
-
-      // Draw 4 small token placeholders in yard
-      final yardCentres = BoardConfig.yardPositions[pi];
-      for (int ti = 0; ti < 4; ti++) {
-        final pos = yardCentres[ti];
-        final centre = Offset(
-          (pos.y + 0.5) * cellSize,
-          (pos.x + 0.5) * cellSize,
-        );
-        canvas.drawCircle(
-          centre,
-          cellSize * 0.32,
-          Paint()..color = NepaliColors.playerColor(pi).withValues(alpha: 0.2),
-        );
-        canvas.drawCircle(
-          centre,
-          cellSize * 0.32,
-          Paint()
-            ..color = NepaliColors.playerColor(pi)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5,
-        );
+  void _star(Canvas canvas, Offset c, double r, Color color,
+      {Color? highlight}) {
+    final path = Path();
+    for (var i = 0; i < 10; i++) {
+      final rr = i.isEven ? r : r * 0.42;
+      final a = i * pi / 5 - pi / 2;
+      final p = c + Offset(cos(a), sin(a)) * rr;
+      if (i == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
       }
     }
+    path.close();
+    final paint = Paint();
+    if (highlight != null) {
+      paint.shader = RadialGradient(
+        center: const Alignment(-0.3, -0.4),
+        colors: [highlight, color],
+      ).createShader(Rect.fromCircle(center: c, radius: r));
+    } else {
+      paint.color = color;
+    }
+    canvas.drawPath(path, paint);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Safe-cell stars
-  // ─────────────────────────────────────────────────────────────
-
-  void _drawSafeStars(Canvas canvas, double cellSize) {
-    const safes = BoardConfig.safeCellsGlobal;
-    for (final globalIdx in safes) {
-      final cell = BoardConfig.mainTrack[globalIdx];
-      final centre = Offset(
-        (cell.y + 0.5) * cellSize,
-        (cell.x + 0.5) * cellSize,
-      );
-      _drawStar(
-        canvas,
-        centre,
-        cellSize * 0.3,
-        Paint()..color = NepaliColors.safeCellStar,
-      );
-    }
-
-    // Player start cells get a special star in their colour.
-    for (int pi = 0; pi < 4; pi++) {
-      final globalIdx = BoardConfig.playerStartGlobalIndex[pi];
-      final cell = BoardConfig.mainTrack[globalIdx];
-      final centre = Offset(
-        (cell.y + 0.5) * cellSize,
-        (cell.x + 0.5) * cellSize,
-      );
-      _drawStar(
-        canvas,
-        centre,
-        cellSize * 0.3,
-        Paint()..color = NepaliColors.playerColor(pi),
-      );
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Tokens
-  // ─────────────────────────────────────────────────────────────
-
-  void _drawTokens(Canvas canvas, double cellSize) {
-    // Gather all token positions indexed by board cell.
-    // Multiple tokens on same cell → cluster them.
-    final Map<String, List<_TokenInfo>> cellMap = {};
-
-    for (int pi = 0; pi < players.length; pi++) {
-      final player = players[pi];
-      for (int ti = 0; ti < player.tokens.length; ti++) {
-        final token = player.tokens[ti];
-        if (token.isFinished) continue;
-
-        final cell = BoardConfig.boardCell(pi, token.position, ti);
-        if (cell == null) continue;
-
-        final key = '${cell.x},${cell.y}';
-        cellMap.putIfAbsent(key, () => []);
-        cellMap[key]!.add(_TokenInfo(
-          playerIndex: pi,
-          tokenId: token.id,
-          localPos: token.position,
-          cell: cell,
-          isHighlighted: pi == currentPlayerIndex &&
-              highlightedTokenIds.contains(token.id),
-        ));
-      }
-    }
-
-    for (final tokens in cellMap.values) {
-      _drawTokenGroup(canvas, tokens, cellSize);
-    }
-  }
-
-  void _drawTokenGroup(
-      Canvas canvas, List<_TokenInfo> tokens, double cellSize) {
-    final count = tokens.length;
-    final cellCentre = Offset(
-      (tokens.first.cell.y + 0.5) * cellSize,
-      (tokens.first.cell.x + 0.5) * cellSize,
-    );
-
-    if (count == 1) {
-      _drawSingleToken(canvas, tokens.first, cellCentre, cellSize * 0.36);
-      return;
-    }
-
-    // Cluster multiple tokens in a 2×2 arrangement.
-    final offsets = [
-      const Offset(-0.22, -0.22),
-      const Offset(0.22, -0.22),
-      const Offset(-0.22, 0.22),
-      const Offset(0.22, 0.22),
+  /// Arrows on the cell where each colour turns into its home column.
+  void _drawEntryArrows(Canvas canvas, BoardGeometry g) {
+    const arrows = [
+      (Point(7, 0), 0.0), // red → right
+      (Point(0, 7), pi / 2), // green ↓
+      (Point(7, 14), pi), // yellow ←
+      (Point(14, 7), -pi / 2), // blue ↑
     ];
-    for (int i = 0; i < count && i < 4; i++) {
-      final off = offsets[i] * cellSize;
-      _drawSingleToken(canvas, tokens[i], cellCentre + off, cellSize * 0.26);
+    for (var p = 0; p < 4; p++) {
+      final (cell, angle) = arrows[p];
+      final c = g.cellCentre(cell.x, cell.y);
+      canvas.save();
+      canvas.translate(c.dx, c.dy);
+      canvas.rotate(angle);
+      final s = g.cell * 0.32;
+      final path = Path()
+        ..moveTo(-s, -s * 0.35)
+        ..lineTo(s * 0.1, -s * 0.35)
+        ..lineTo(s * 0.1, -s * 0.8)
+        ..lineTo(s, 0)
+        ..lineTo(s * 0.1, s * 0.8)
+        ..lineTo(s * 0.1, s * 0.35)
+        ..lineTo(-s, s * 0.35)
+        ..close();
+      canvas.drawPath(path.shift(Offset(0, g.cell * 0.04)),
+          Paint()..color = Colors.black.withValues(alpha: 0.25));
+      canvas.drawPath(path, Paint()..color = NepaliColors.playerColor(p));
+      canvas.restore();
     }
-  }
-
-  void _drawSingleToken(
-      Canvas canvas, _TokenInfo info, Offset centre, double radius) {
-    final color = NepaliColors.playerColor(info.playerIndex);
-
-    // Shadow
-    canvas.drawCircle(
-      centre + const Offset(2, 3),
-      radius,
-      Paint()..color = Colors.black.withValues(alpha: 0.3),
-    );
-
-    // Body
-    canvas.drawCircle(centre, radius, Paint()..color = color);
-
-    // Sheen
-    canvas.drawCircle(
-      centre - Offset(radius * 0.3, radius * 0.3),
-      radius * 0.35,
-      Paint()..color = Colors.white.withValues(alpha: 0.45),
-    );
-
-    // Outer ring (white)
-    canvas.drawCircle(
-      centre,
-      radius,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = radius * 0.18,
-    );
-
-    // Highlight ring if this token can be moved
-    if (info.isHighlighted) {
-      canvas.drawCircle(
-        centre,
-        radius + 3,
-        Paint()
-          ..color = NepaliColors.gold
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5,
-      );
-    }
-
-    // Token number
-    final tp = TextPainter(
-      text: TextSpan(
-        text: '${info.tokenId + 1}',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: radius * 0.85,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(
-      canvas,
-      centre - Offset(tp.width / 2, tp.height / 2),
-    );
   }
 
   @override
-  bool shouldRepaint(BoardPainter oldDelegate) => true;
-}
-
-class _TokenInfo {
-  final int playerIndex;
-  final int tokenId;
-  final int localPos;
-  final Point<int> cell;
-  final bool isHighlighted;
-
-  _TokenInfo({
-    required this.playerIndex,
-    required this.tokenId,
-    required this.localPos,
-    required this.cell,
-    this.isHighlighted = false,
-  });
+  bool shouldRepaint(BoardPainter oldDelegate) => false;
 }

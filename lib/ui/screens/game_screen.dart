@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+
+import '../../audio/audio_manager.dart';
 import '../../core/theme/app_theme.dart';
 import '../../game/engine/game_state.dart';
 import '../../game/engine/player.dart';
-import '../../game/engine/token.dart';
 import '../../game/game_provider.dart';
 import '../../l10n/strings.dart';
-import '../painters/board_painter.dart';
+import '../../storage/settings_storage.dart';
+import '../board/board_view.dart';
 import '../widgets/dice_widget.dart';
+import '../widgets/nepali_background.dart';
 import '../widgets/reaction_panel.dart';
 
 class GameScreen extends StatefulWidget {
@@ -21,6 +24,9 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   String? _activeReaction;
   int? _reactionPlayer;
+  bool _tilted = true;
+  bool _winShown = false;
+  bool _soundOn = AudioManager.instance.soundEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -28,12 +34,15 @@ class _GameScreenState extends State<GameScreen> {
       builder: (context, game, _) {
         if (!game.hasGame) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            backgroundColor: Color(0xFF14040A),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final state = game.state!;
 
-        if (state.phase == GamePhase.finished) {
+        if (state.phase == GamePhase.finished && !_winShown) {
+          _winShown = true;
           WidgetsBinding.instance
               .addPostFrameCallback((_) => _showWinDialog(context, state));
         }
@@ -44,35 +53,57 @@ class _GameScreenState extends State<GameScreen> {
             if (!didPop) _confirmQuit(context, game);
           },
           child: Scaffold(
-            backgroundColor: NepaliColors.background,
-            body: SafeArea(
-              child: Stack(
-                children: [
-                  Column(
-                    children: [
-                      _buildTopBar(context, state, game),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: _buildGameLayout(context, state, game),
+            backgroundColor: const Color(0xFF14040A),
+            body: NepaliBackground(
+              child: SafeArea(
+                child: Stack(
+                  children: [
+                    Column(
+                      children: [
+                        _buildTopBar(context, state, game),
+                        _buildPlayersRow(state, game, [0, 1]),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 4),
+                            child: BoardView(
+                              players: state.players,
+                              currentPlayerIndex: state.currentPlayerIndex,
+                              movableTokenIds: game.movableTokenIds,
+                              positionOverrides: game.positionOverrides,
+                              tilted: _tilted,
+                              onTokenTap: (t) => game.moveToken(t),
+                            ),
+                          ),
+                        ),
+                        if (state.players.length > 2)
+                          _buildPlayersRow(state, game, [3, 2]),
+                        _buildControlBar(context, state, game),
+                      ],
+                    ),
+                    if (game.announcement != null)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: Center(
+                            child: _buildAnnouncement(game.announcement!),
+                          ),
                         ),
                       ),
-                      if (game.announcement != null)
-                        _buildAnnouncement(game.announcement!),
-                    ],
-                  ),
-                  // Reaction bubble from the player who last reacted.
-                  if (_activeReaction != null)
-                    Positioned(
-                      top: 72,
-                      left: 0,
-                      right: 0,
-                      child: ReactionBubble(
-                        text: _activeReaction!,
-                        isRight: _reactionPlayer == 1 || _reactionPlayer == 2,
+                    if (_activeReaction != null)
+                      Positioned(
+                        top: 110,
+                        left: 0,
+                        right: 0,
+                        child: IgnorePointer(
+                          child: ReactionBubble(
+                            text: _activeReaction!,
+                            isRight:
+                                _reactionPlayer == 1 || _reactionPlayer == 2,
+                          ),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -81,362 +112,398 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Layout
-  // ─────────────────────────────────────────────────────────────
+  // ─── Top bar ─────────────────────────────────────────────────────────
 
-  Widget _buildGameLayout(
+  Widget _buildTopBar(
       BuildContext context, GameState state, GameProvider game) {
-    return Column(
-      children: [
-        // Top players row (player 1 + player 2 if 4-player)
-        _buildPlayersRow(state, game, [0, 1]),
-        const SizedBox(height: 8),
-        // Board (main area)
-        Expanded(child: _buildBoard(context, state, game)),
-        const SizedBox(height: 8),
-        // Bottom players row
-        if (state.players.length > 2) _buildPlayersRow(state, game, [3, 2]),
-        const SizedBox(height: 8),
-        _buildControlBar(context, state, game),
-      ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 18, 6, 2),
+      child: Row(
+        children: [
+          _roundIcon(Icons.arrow_back_rounded, () => _confirmQuit(context, game)),
+          const Expanded(
+            child: Text(
+              S.appName,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: NepaliColors.goldLight,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
+              ),
+            ),
+          ),
+          _roundIcon(
+            _tilted ? Icons.grid_view_rounded : Icons.view_in_ar_rounded,
+            () => setState(() => _tilted = !_tilted),
+            tooltip: _tilted ? '२D दृश्य' : '३D दृश्य',
+          ),
+          const SizedBox(width: 6),
+          _roundIcon(
+            _soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+            _toggleSound,
+            tooltip: 'आवाज',
+          ),
+          const SizedBox(width: 6),
+          _roundIcon(Icons.info_outline_rounded,
+              () => _showGameInfo(context, state)),
+        ],
+      ),
     );
   }
+
+  Widget _roundIcon(IconData icon, VoidCallback onTap, {String? tooltip}) {
+    final button = InkResponse(
+      onTap: onTap,
+      radius: 24,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.10),
+          border: Border.all(color: NepaliColors.gold.withValues(alpha: 0.6)),
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
+    );
+    return tooltip == null ? button : Tooltip(message: tooltip, child: button);
+  }
+
+  Future<void> _toggleSound() async {
+    final on = !_soundOn;
+    setState(() => _soundOn = on);
+    AudioManager.instance.setSoundEnabled(on);
+    AudioManager.instance.setMusicEnabled(on);
+    final s = await SettingsStorage.load();
+    await SettingsStorage.save(s.copyWith(soundEnabled: on, musicEnabled: on));
+  }
+
+  // ─── Player cards ────────────────────────────────────────────────────
 
   Widget _buildPlayersRow(
       GameState state, GameProvider game, List<int> indices) {
-    return Row(
-      children: indices.map((i) {
-        if (i >= state.players.length) return const Expanded(child: SizedBox());
-        return Expanded(child: _buildPlayerInfo(state, game, i));
-      }).toList(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: Row(
+        children: indices.map((i) {
+          if (i >= state.players.length) {
+            return const Expanded(child: SizedBox());
+          }
+          return Expanded(child: _buildPlayerCard(state, game, i));
+        }).toList(),
+      ),
     );
   }
 
-  Widget _buildPlayerInfo(GameState state, GameProvider game, int i) {
+  Widget _buildPlayerCard(GameState state, GameProvider game, int i) {
     final player = state.players[i];
     final isCurrent = state.currentPlayerIndex == i;
-    final color = NepaliColors.playerColor(i);
+    final color = NepaliColors.playerColor(player.index);
+    final finished = player.tokens.where((t) => t.isFinished).length;
+    final isAi = player.type == PlayerType.ai;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
-        color: isCurrent ? color.withValues(alpha: 0.2) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCurrent ? color : Colors.transparent,
-          width: 2,
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: isCurrent ? 0.16 : 0.07),
+            Colors.white.withValues(alpha: isCurrent ? 0.06 : 0.03),
+          ],
         ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isCurrent ? color : Colors.white.withValues(alpha: 0.12),
+          width: isCurrent ? 2 : 1,
+        ),
+        boxShadow: isCurrent
+            ? [BoxShadow(color: color.withValues(alpha: 0.55), blurRadius: 18)]
+            : const [],
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: color,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                center: const Alignment(-0.3, -0.4),
+                colors: [Color.lerp(color, Colors.white, 0.35)!, color],
+              ),
+              border: Border.all(color: NepaliColors.goldLight, width: 1.5),
+            ),
+            alignment: Alignment.center,
             child: Text(
-              player.type == PlayerType.ai ? '🤖' : player.name[0],
-              style: const TextStyle(fontSize: 12, color: Colors.white),
+              isAi ? '🤖' : (player.name.isEmpty ? '?' : player.name.characters.first),
+              style: const TextStyle(
+                  fontSize: 15,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   player.name,
-                  style: TextStyle(
-                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 13,
-                    color: isCurrent ? color : NepaliColors.textPrimary,
-                  ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
+                  ),
                 ),
-                Text(
-                  '${player.tokens.where((t) => t.isFinished).length}/4 घर',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: NepaliColors.textSecondary,
+                const SizedBox(height: 3),
+                Row(
+                  children: List.generate(
+                    4,
+                    (k) => Container(
+                      width: 9,
+                      height: 9,
+                      margin: const EdgeInsets.only(right: 3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: k < finished
+                            ? color
+                            : Colors.white.withValues(alpha: 0.12),
+                        border: Border.all(
+                            color: color.withValues(alpha: 0.8), width: 1),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          if (isCurrent && !state.diceRolled && !game.currentPlayerIsAi)
-            const Text('👉', style: TextStyle(fontSize: 16)),
-          if (player.hasWon) const Text('🏆', style: TextStyle(fontSize: 16)),
+          if (player.hasWon)
+            const Text('🏆', style: TextStyle(fontSize: 18))
+          else if (isCurrent && isAi)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: NepaliColors.goldLight),
+            )
+          else if (isCurrent)
+            const Text('👈', style: TextStyle(fontSize: 16))
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .moveX(begin: 0, end: -4, duration: 450.ms),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Board
-  // ─────────────────────────────────────────────────────────────
-
-  Widget _buildBoard(BuildContext context, GameState state, GameProvider game) {
-    final currentPlayer = state.currentPlayer;
-    final highlightable = state.diceRolled && !game.currentPlayerIsAi
-        ? currentPlayer.moveableTokens(state.lastDiceValue)
-        : <Token>[];
-    final highlightedIds = highlightable.map((t) => t.id).toSet();
-
-    return AspectRatio(
-      aspectRatio: 1,
-      child: GestureDetector(
-        onTapUp: (details) => _handleBoardTap(details, context, state, game),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: CustomPaint(
-            painter: BoardPainter(
-              players: state.players,
-              highlightedTokenIds: highlightedIds,
-              currentPlayerIndex: state.currentPlayerIndex,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _handleBoardTap(TapUpDetails details, BuildContext context,
-      GameState state, GameProvider game) {
-    if (!state.diceRolled || game.currentPlayerIsAi || game.isTokenMoving) {
-      return;
-    }
-
-    // Tap coordinates aren't mapped to board cells; selection is driven by
-    // which tokens are legally moveable instead.
-    final moveable = state.currentPlayer.moveableTokens(state.lastDiceValue);
-    if (moveable.isEmpty) return;
-
-    // If only one token can move, auto-select it.
-    if (moveable.length == 1) {
-      game.moveToken(moveable.first);
-      return;
-    }
-
-    // Show a dialog for token selection.
-    _showTokenSelectionDialog(context, moveable, game, state);
-  }
-
-  void _showTokenSelectionDialog(BuildContext context, List<Token> tokens,
-      GameProvider game, GameState state) {
-    final color = NepaliColors.playerColor(state.currentPlayerIndex);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('कुन token सार्नुहुन्छ?', style: TextStyle(color: color)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: tokens.map((t) {
-            final posLabel = t.isInYard
-                ? 'घर (बाहिर निस्कनुस्)'
-                : t.isInHomeColumn
-                    ? 'घर स्तम्भ ${t.position - 51}'
-                    : 'स्थिति ${t.position}';
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: color,
-                child: Text('${t.id + 1}',
-                    style: const TextStyle(color: Colors.white)),
-              ),
-              title: Text('Token ${t.id + 1}'),
-              subtitle: Text(posLabel),
-              onTap: () {
-                Navigator.pop(ctx);
-                game.moveToken(t);
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Control bar (dice + reaction)
-  // ─────────────────────────────────────────────────────────────
+  // ─── Control bar ─────────────────────────────────────────────────────
 
   Widget _buildControlBar(
       BuildContext context, GameState state, GameProvider game) {
-    final isMyTurn = !game.currentPlayerIsAi;
-    final canRoll = isMyTurn && !state.diceRolled && !game.isDiceRolling;
+    final isAi = game.currentPlayerIsAi;
+    final canRoll = !isAi &&
+        !state.diceRolled &&
+        !game.isDiceRolling &&
+        !game.isTokenMoving &&
+        state.phase != GamePhase.finished;
+    final current = state.currentPlayer;
+    final color = NepaliColors.playerColor(current.index);
+
+    final String hint;
+    if (isAi) {
+      hint = '🤖 ${current.name} सोच्दैछ…';
+    } else if (game.isDiceRolling) {
+      hint = 'पासा घुम्दैछ…';
+    } else if (state.diceRolled) {
+      hint = 'चम्किलो गोटी थिच्नुहोस्!';
+    } else {
+      hint = '${current.name}, पासा थिच्नुहोस्!';
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      margin: const EdgeInsets.fromLTRB(10, 2, 10, 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: NepaliColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.12),
+            Colors.white.withValues(alpha: 0.04),
+          ],
+        ),
+        border: Border.all(color: color.withValues(alpha: 0.7), width: 1.5),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
+          BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 20),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Turn indicator
+          _roundIcon(Icons.emoji_emotions_outlined,
+              () => _showReactions(context, state),
+              tooltip: S.react),
+          const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              game.currentPlayerIsAi
-                  ? S.botTurn
-                  : state.diceRolled
-                      ? 'Token सार्नुहोस्!'
-                      : S.yourTurn,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: NepaliColors.playerColor(state.currentPlayerIndex),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Text(
+                hint,
+                key: ValueKey(hint),
+                maxLines: 2,
+                style: TextStyle(
+                  color: Color.lerp(color, Colors.white, 0.45),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
             ),
           ),
-
-          // Reaction button
-          IconButton(
-            icon: const Text('😊', style: TextStyle(fontSize: 24)),
-            tooltip: S.react,
-            onPressed: () => _showReactions(context, state),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Dice
-          GestureDetector(
-            onTap: canRoll ? () => game.rollDice() : null,
-            child: DiceWidget(
-              value: state.lastDiceValue == 0 ? 1 : state.lastDiceValue,
-              isRolling: game.isDiceRolling,
-              canRoll: canRoll,
-            ),
+          DiceWidget(
+            value: state.lastDiceValue == 0 ? 1 : state.lastDiceValue,
+            isRolling: game.isDiceRolling,
+            canRoll: canRoll,
+            onRoll: game.rollDice,
+            size: 64,
           ),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Top bar
-  // ─────────────────────────────────────────────────────────────
-
-  Widget _buildTopBar(
-      BuildContext context, GameState state, GameProvider game) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: NepaliColors.primary,
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => _confirmQuit(context, game),
-          ),
-          const Expanded(
-            child: Text(
-              S.appName,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline, color: Colors.white),
-            onPressed: () => _showGameInfo(context, state),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Announcement overlay
-  // ─────────────────────────────────────────────────────────────
+  // ─── Announcement ────────────────────────────────────────────────────
 
   Widget _buildAnnouncement(String message) {
+    return KeyedSubtree(
+      key: ValueKey(message),
+      child: _announcementCard(message),
+    );
+  }
+
+  Widget _announcementCard(String message) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
       decoration: BoxDecoration(
-        color: NepaliColors.primaryDark.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE8394A), Color(0xFF8C0D1A)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: NepaliColors.goldLight, width: 2),
+        boxShadow: const [
+          BoxShadow(color: Colors.black54, blurRadius: 18, offset: Offset(0, 8)),
+        ],
       ),
       child: Text(
         message,
+        textAlign: TextAlign.center,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+          fontSize: 26,
+          fontWeight: FontWeight.w900,
+          shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
         ),
-        textAlign: TextAlign.center,
       ),
-    ).animate().fadeIn(duration: 300.ms).scale(begin: const Offset(0.85, 0.85));
+    )
+        .animate()
+        .scale(
+            begin: const Offset(0.4, 0.4),
+            end: const Offset(1, 1),
+            duration: 350.ms,
+            curve: Curves.elasticOut)
+        .fadeIn(duration: 150.ms)
+        .then(delay: 1100.ms)
+        .fadeOut(duration: 300.ms);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Dialogs
-  // ─────────────────────────────────────────────────────────────
+  // ─── Dialogs ─────────────────────────────────────────────────────────
 
   void _showWinDialog(BuildContext context, GameState state) {
+    final winner = state.players[state.winnerIndex ?? 0];
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('🏆 बधाई छ!',
-            textAlign: TextAlign.center, style: TextStyle(fontSize: 28)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${state.players[state.winnerIndex ?? 0].name}\nले खेल जितिसके!',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF6A1020), Color(0xFF2A0710)],
             ),
-            const SizedBox(height: 16),
-            if (state.finishedOrder.length > 1) ...[
-              const Text('क्रम:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              ...state.finishedOrder.asMap().entries.map((e) => Text(
-                    '${e.key + 1}. ${state.players[e.value].name}',
-                    style: const TextStyle(fontSize: 16),
-                  )),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: NepaliColors.goldLight, width: 2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🏆', style: TextStyle(fontSize: 64))
+                  .animate()
+                  .scale(duration: 600.ms, curve: Curves.elasticOut),
+              const SizedBox(height: 6),
+              const Text('बधाई छ!',
+                  style: TextStyle(
+                      color: NepaliColors.goldLight,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              Text(
+                '${winner.name} ले खेल जित्नुभयो!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700),
+              ),
+              if (state.finishedOrder.length > 1) ...[
+                const SizedBox(height: 14),
+                ...state.finishedOrder.asMap().entries.map((e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        '${['🥇', '🥈', '🥉', '4.'][e.key < 3 ? e.key : 3]}  ${state.players[e.value].name}',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    )),
+              ],
+              const SizedBox(height: 20),
+              GlossyButton(
+                label: S.playAgain,
+                emoji: '🔁',
+                height: 52,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _winShown = false;
+                  context.read<GameProvider>().startNewGame(
+                        players: state.players
+                            .map((p) => Player(
+                                  index: p.index,
+                                  name: p.name,
+                                  type: p.type,
+                                  difficulty: p.difficulty,
+                                ))
+                            .toList(),
+                      );
+                },
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+                child: const Text(S.quitGame,
+                    style: TextStyle(color: Colors.white70, fontSize: 16)),
+              ),
             ],
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context); // back to home
-            },
-            child: const Text(S.quitGame),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              // Restart with same players
-              final provider = context.read<GameProvider>();
-              provider.startNewGame(
-                players: state.players
-                    .map((p) => p.copyWith(
-                          tokens: null,
-                          hasWon: false,
-                          finishOrder: 0,
-                        ))
-                    .toList(),
-              );
-            },
-            child: const Text(S.playAgain),
-          ),
-        ],
       ),
     );
   }
@@ -493,6 +560,11 @@ class _GameScreenState extends State<GameScreen> {
                           style: const TextStyle(fontWeight: FontWeight.bold))
                       : null,
                 )),
+            const SizedBox(height: 8),
+            const Text(
+              'सुझाव: चम्किलो गोटीमा थिचेर सार्नुहोस्। माथिको बटनले ३D/२D दृश्य बदल्छ।',
+              style: TextStyle(fontSize: 13),
+            ),
           ],
         ),
       ),
@@ -507,6 +579,7 @@ class _GameScreenState extends State<GameScreen> {
       ),
       builder: (_) => ReactionPanel(
         onReact: (reaction) {
+          AudioManager().playReaction();
           setState(() {
             _activeReaction = reaction;
             _reactionPlayer = state.currentPlayerIndex;
