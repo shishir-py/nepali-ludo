@@ -123,7 +123,7 @@ class GameProvider extends ChangeNotifier {
     notifyListeners();
 
     unawaited(AudioManager().playDiceRoll());
-    await Future.delayed(const Duration(milliseconds: 750));
+    await Future.delayed(const Duration(milliseconds: 600));
     if (_engine == null) return;
 
     _engine!.rollDice();
@@ -232,7 +232,7 @@ class GameProvider extends ChangeNotifier {
       _isDiceRolling = true;
       notifyListeners();
       unawaited(AudioManager().playDiceRoll());
-      await Future.delayed(const Duration(milliseconds: 750));
+      await Future.delayed(const Duration(milliseconds: 600));
       if (_engine == null) return;
       value = _engine!.rollDice();
       _isDiceRolling = false;

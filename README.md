@@ -1,7 +1,7 @@
-# 🎲 नेपाली लुडो
+# 🎲 Ludo Pro
 
 <p align="center">
-  <img src="assets/images/logo.png" alt="Nepali Ludo Logo" width="120" height="120">
+  <img src="assets/images/logo.png" alt="Ludo Pro logo" width="120" height="120">
 </p>
 
 <p align="center">
@@ -17,12 +17,12 @@
   </a>
   <img src="https://img.shields.io/badge/Flutter-3.22-blue" alt="Flutter">
   <img src="https://img.shields.io/badge/Platform-Android-green" alt="Platform">
-  <img src="https://img.shields.io/badge/Language-नेपाली-red" alt="Language">
+  <img src="https://img.shields.io/badge/Language-English-red" alt="Language">
 </p>
 
 ---
 
-A complete, production-ready **Nepali-themed Ludo game** for Android — built with Flutter. Play against AI or with friends on the same device, all in the Nepali language with a distinctive Nepali visual identity.
+A complete, polished **Ludo game** for Android — built with Flutter. Play against the computer or with friends on the same device, on a board inspired by the Himalaya.
 
 ## 📥 Download
 
@@ -39,12 +39,12 @@ Install the APK on your Android device and start playing immediately. No interne
 | 🎲 Classic Ludo | All standard rules: safe cells, captures, exact home entry, extra turns |
 | 🤖 AI Opponent | Three difficulty levels: सजिलो / सामान्य / गाह्रो |
 | 👥 Local Multiplayer | 2–4 players on the same device |
-| 🇳🇵 Nepali UI | Complete Nepali language interface with Devanagari typography |
-| 😂 Nepali Reactions | Send fun Nepali expressions during the game |
+| 🎨 Choose colours | Every player picks their own colour |
+| 😂 Reactions | Send quick emoji and messages during the game |
 | 🔔 Game Announcements | छक्का!, काटियो!, घर पुग्यो!, बधाई छ! |
 | 🔊 Sound Effects | Dice, movement, captures, win sounds |
 | 🏆 Statistics | Games played, wins, losses, streaks, captures |
-| 🏅 Achievements | 16 achievements with Nepali names |
+| 🏅 Achievements | 16 achievements to unlock |
 | 💾 Save/Resume | Game auto-saves; continue where you left off |
 | 📱 Offline | Works completely without internet |
 | ⚙️ Settings | Sound, music, vibration, AI difficulty controls |
@@ -134,7 +134,7 @@ lib/
 │   ├── ai/
 │   │   └── ai_engine.dart       # Easy / Normal / Hard AI
 │   └── game_provider.dart       # ChangeNotifier state management
-├── l10n/strings.dart            # All Nepali strings
+├── l10n/strings.dart            # All UI strings
 ├── storage/                     # SharedPreferences persistence
 ├── audio/audio_manager.dart     # Sound effects & music
 └── ui/
@@ -170,7 +170,7 @@ flutter test
 ## 🗺️ Roadmap
 
 ### v1.0 ✅ (Current)
-- Classic Ludo · AI · Local multiplayer · Nepali UI · Reactions · Sound · Statistics · Offline
+- Classic Ludo · AI · Local multiplayer · English UI · Reactions · Sound · Statistics · Offline
 
 ### v1.1 🔄
 - Online rooms with room codes · Friend system · Improved AI · More avatars
@@ -179,7 +179,7 @@ flutter test
 - User accounts · Online leaderboards · Cloud stats · Match history
 
 ### Future
-- Tournaments · Voice reactions · Custom boards · Seasonal Nepali themes
+- Tournaments · Voice reactions · Custom boards · Seasonal themes
 
 ---
 

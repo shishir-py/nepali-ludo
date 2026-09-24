@@ -5,7 +5,7 @@
 /// start with an emoji (that caused doubled icons on the home menu).
 class S {
   // ─── App ───────────────────────────────────────────────────
-  static const appName = 'Nepali Ludo';
+  static const appName = 'Ludo Pro';
   static const appTagline = 'Roll. Race. Win!';
   static const appVersion = 'Version 1.0.0';
 

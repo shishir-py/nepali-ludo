@@ -45,81 +45,119 @@ class _DiceWidgetState extends State<DiceWidget>
   late final Ticker _ticker;
   Duration _last = Duration.zero;
   double _time = 0;
+  final math.Random _rng = math.Random();
 
-  double _a = 0, _b = 0; // current orientation
-  double _fromA = 0, _fromB = 0, _toA = 0, _toB = 0;
-  double _settleT = 1; // 1 = at rest
-  double _view = 0; // 1 = angled 3D view, 0 = face-on
-  double _bounce = 0; // px upwards
+  // Orientation as a unit quaternion, plus a world-space spin.
+  _Quat _q = _Quat.identity;
+  _V3 _omega = const _V3(0, 0, 0);
+
+  // Vertical bounce (px above the table) and its velocity.
+  double _h = 0, _vh = 0;
+
+  // Landing: slerp from the tumbling orientation to the rolled face.
+  _Quat _from = _Quat.identity, _to = _Quat.identity;
+  double _settleT = 1;
+  double _hFrom = 0;
+  double _viewFrom = 0;
+
+  double _view = 0; // 1 = angled 3D view while tumbling, 0 = face-on
   bool _pressed = false;
 
   @override
   void initState() {
     super.initState();
-    final r = _faceRotation[widget.value.clamp(1, 6)]!;
-    _a = r.$1;
-    _b = r.$2;
+    _q = _faceQuat(widget.value, 0);
     _ticker = createTicker(_tick)..start();
   }
 
   @override
   void didUpdateWidget(DiceWidget old) {
     super.didUpdateWidget(old);
-    final landed = old.isRolling && !widget.isRolling;
-    final changedAtRest =
-        !widget.isRolling && old.value != widget.value && !landed;
-    if (landed || changedAtRest) _startSettle(widget.value);
+    if (!old.isRolling && widget.isRolling) {
+      _throw();
+    } else if (old.isRolling && !widget.isRolling) {
+      _land(widget.value);
+    } else if (!widget.isRolling && old.value != widget.value) {
+      _land(widget.value);
+    }
   }
 
-  void _startSettle(int value) {
-    final target = _faceRotation[value.clamp(1, 6)]!;
-    double forward(double from, double to) {
-      var t = to;
-      while (t < from + math.pi * 0.5) {
-        t += math.pi * 2;
-      }
-      return t;
-    }
+  /// Toss the dice: a quick upward hop and a strong spin about a mostly
+  /// horizontal axis, like a dice flicked out of the hand.
+  void _throw() {
+    final axis = _V3(
+      (_rng.nextBool() ? 1 : -1) * (0.8 + _rng.nextDouble() * 0.4),
+      (_rng.nextDouble() - 0.5) * 1.2,
+      (_rng.nextDouble() - 0.5) * 0.6,
+    ).normalized();
+    _omega = axis * (17 + _rng.nextDouble() * 6);
+    _vh = widget.size * 6.2;
+    _settleT = 1;
+  }
 
-    _fromA = _a;
-    _fromB = _b;
-    _toA = forward(_a, target.$1);
-    _toB = forward(_b, target.$2);
+  /// Turn smoothly onto [value], choosing whichever of the four upright
+  /// orientations of that face is closest so it tips over naturally.
+  void _land(int value) {
+    var best = _faceQuat(value, 0);
+    var bestDot = -1.0;
+    for (var k = 0; k < 4; k++) {
+      final t = _faceQuat(value, k);
+      final d = _q.dot(t).abs();
+      if (d > bestDot) {
+        bestDot = d;
+        best = t;
+      }
+    }
+    _from = _q;
+    _to = _q.dot(best) < 0 ? best.negated() : best;
+    _hFrom = _h;
+    _viewFrom = _view;
     _settleT = 0;
+    _omega = const _V3(0, 0, 0);
   }
 
   void _tick(Duration elapsed) {
     final dt =
-        ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.05).toDouble();
+        ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.034).toDouble();
     _last = elapsed;
     _time += dt;
     final s = widget.size;
 
     if (widget.isRolling) {
-      _a += dt * 10.5;
-      _b += dt * 14;
-      _view = math.min(1, _view + dt * 6);
-      _bounce = math.sin(_time * 17).abs() * s * 0.16;
+      // Spin, slowed a little by air/table friction.
+      final speed = _omega.length;
+      if (speed > 0) {
+        _q = (_Quat.axisAngle(_omega * (1 / speed), speed * dt) * _q)
+            .normalized();
+      }
+      _omega = _omega * math.exp(-1.6 * dt);
+      // Gravity and bounces.
+      _vh -= s * 60 * dt;
+      _h += _vh * dt;
+      if (_h < 0) {
+        _h = 0;
+        _vh = -_vh * 0.45;
+        // Each impact knocks the spin a little.
+        _omega = (_omega +
+                _V3(_rng.nextDouble() - 0.5, _rng.nextDouble() - 0.5,
+                        _rng.nextDouble() - 0.5) *
+                    6) *
+            0.85;
+      }
+      _view = math.min(1, _view + dt * 8);
     } else if (_settleT < 1) {
-      _settleT = math.min(1, _settleT + dt / 0.6);
+      _settleT = math.min(1, _settleT + dt / 0.24);
       final e = Curves.easeOutCubic.transform(_settleT);
-      _a = _fromA + (_toA - _fromA) * e;
-      _b = _fromB + (_toB - _fromB) * e;
-      _view = 1 - Curves.easeInOut.transform(_settleT);
-      _bounce = (1 - _settleT) *
-          math.sin(_settleT * math.pi * 3).abs() *
-          s *
-          0.12;
+      _q = _Quat.slerp(_from, _to, e);
+      _h = _hFrom * (1 - e);
+      _view = _viewFrom * (1 - Curves.easeInOut.transform(_settleT));
       if (_settleT >= 1) {
-        // Snap exactly onto the face so the pips are perfectly square.
-        final r = _faceRotation[widget.value.clamp(1, 6)]!;
-        _a = r.$1;
-        _b = r.$2;
+        _q = _to;
+        _h = 0;
         _view = 0;
       }
     } else {
-      _bounce =
-          widget.canRoll ? (math.sin(_time * 3) + 1) * s * 0.025 : 0;
+      _h = widget.canRoll ? (math.sin(_time * 3) + 1) * s * 0.025 : 0;
     }
     if (mounted) setState(() {});
   }
@@ -152,10 +190,9 @@ class _DiceWidgetState extends State<DiceWidget>
           height: s * 1.3,
           child: CustomPaint(
             painter: _DicePainter(
-              a: _a,
-              b: _b,
+              rotation: _q.toMatrix(),
               view: _view,
-              bounce: _bounce,
+              bounce: _h,
               glow: glow,
               dimmed: !widget.canRoll && !widget.isRolling,
             ),
@@ -163,6 +200,73 @@ class _DiceWidgetState extends State<DiceWidget>
         ),
       ),
     );
+  }
+}
+
+/// Orientation that shows [value] to the viewer, turned [k] quarter-turns
+/// in the picture plane (all four look upright and square).
+_Quat _faceQuat(int value, int k) {
+  final r = _faceRotation[value.clamp(1, 6)]!;
+  final face = _Quat.axisAngle(const _V3(1, 0, 0), r.$1) *
+      _Quat.axisAngle(const _V3(0, 1, 0), r.$2);
+  return _Quat.axisAngle(const _V3(0, 0, 1), k * math.pi / 2) * face;
+}
+
+/// Minimal unit-quaternion helper for smooth 3D rotation.
+class _Quat {
+  final double w, x, y, z;
+  const _Quat(this.w, this.x, this.y, this.z);
+  static const identity = _Quat(1, 0, 0, 0);
+
+  factory _Quat.axisAngle(_V3 axis, double angle) {
+    final h = angle / 2, s = math.sin(h);
+    return _Quat(math.cos(h), axis.x * s, axis.y * s, axis.z * s);
+  }
+
+  _Quat operator *(_Quat o) => _Quat(
+        w * o.w - x * o.x - y * o.y - z * o.z,
+        w * o.x + x * o.w + y * o.z - z * o.y,
+        w * o.y - x * o.z + y * o.w + z * o.x,
+        w * o.z + x * o.y - y * o.x + z * o.w,
+      );
+
+  double dot(_Quat o) => w * o.w + x * o.x + y * o.y + z * o.z;
+  _Quat negated() => _Quat(-w, -x, -y, -z);
+
+  _Quat normalized() {
+    final l = math.sqrt(dot(this));
+    return _Quat(w / l, x / l, y / l, z / l);
+  }
+
+  static _Quat slerp(_Quat a, _Quat b, double t) {
+    var d = a.dot(b);
+    var bb = b;
+    if (d < 0) {
+      d = -d;
+      bb = b.negated();
+    }
+    if (d > 0.9995) {
+      return _Quat(
+        a.w + (bb.w - a.w) * t,
+        a.x + (bb.x - a.x) * t,
+        a.y + (bb.y - a.y) * t,
+        a.z + (bb.z - a.z) * t,
+      ).normalized();
+    }
+    final th = math.acos(d);
+    final sa = math.sin((1 - t) * th) / math.sin(th);
+    final sb = math.sin(t * th) / math.sin(th);
+    return _Quat(a.w * sa + bb.w * sb, a.x * sa + bb.x * sb,
+        a.y * sa + bb.y * sb, a.z * sa + bb.z * sb);
+  }
+
+  /// Row-major 3×3 rotation matrix.
+  List<double> toMatrix() {
+    return [
+      1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y),
+      2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x),
+      2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y),
+    ];
   }
 }
 
@@ -174,6 +278,13 @@ class _V3 {
   _V3 operator +(_V3 o) => _V3(x + o.x, y + o.y, z + o.z);
   _V3 operator *(double k) => _V3(x * k, y * k, z * k);
   double dot(_V3 o) => x * o.x + y * o.y + z * o.z;
+  double get length => math.sqrt(dot(this));
+  _V3 normalized() => this * (1 / length);
+  _V3 mat(List<double> m) => _V3(
+        m[0] * x + m[1] * y + m[2] * z,
+        m[3] * x + m[4] * y + m[5] * z,
+        m[6] * x + m[7] * y + m[8] * z,
+      );
 
   _V3 rotX(double a) {
     final c = math.cos(a), s = math.sin(a);
@@ -227,12 +338,12 @@ const _pips = {
 };
 
 class _DicePainter extends CustomPainter {
-  final double a, b, view, bounce, glow;
+  final List<double> rotation;
+  final double view, bounce, glow;
   final bool dimmed;
 
   _DicePainter({
-    required this.a,
-    required this.b,
+    required this.rotation,
     required this.view,
     required this.bounce,
     required this.glow,
@@ -249,7 +360,7 @@ class _DicePainter extends CustomPainter {
   static const _pipRed = Color(0xFFC8102E);
 
   _V3 _xf(_V3 p) =>
-      p.rotY(b).rotX(a).rotY(_viewY * view).rotX(_viewX * view);
+      p.mat(rotation).rotY(_viewY * view).rotX(_viewX * view);
 
   @override
   void paint(Canvas canvas, Size size) {

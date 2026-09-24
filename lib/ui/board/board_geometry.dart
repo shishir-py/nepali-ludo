@@ -11,7 +11,7 @@ class BoardGeometry {
   const BoardGeometry(this.size);
 
   /// Width of the wooden frame around the grid.
-  double get frame => size * 0.045;
+  double get frame => size * 0.058;
 
   /// Side length of one grid cell.
   double get cell => (size - frame * 2) / 15;

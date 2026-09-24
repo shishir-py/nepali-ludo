@@ -41,33 +41,30 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           mv build/app/outputs/flutter-apk/app-release.apk \
-             "Nepali-Ludo-${VERSION}.apk"
+             "Ludo-Pro-${VERSION}.apk"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "नेपाली लुडो ${{ github.ref_name }}"
+          name: "Ludo Pro ${{ github.ref_name }}"
           body: |
-            ## नेपाली लुडो ${{ github.ref_name }} 🎲
+            ## Ludo Pro ${{ github.ref_name }} 🎲
 
-            **नयाँ संस्करण प्रकाशित भयो!**
+            ### Features
+            - 🎲 Classic Ludo with realistic 3D dice
+            - 🤖 Computer opponent (Easy / Normal / Hard)
+            - 👥 2–4 players on one device, each picks a colour
+            - 🏔️ Himalayan-themed board
+            - 🔊 Sound effects and music, customisable per event
+            - 🏆 Statistics and achievements
+            - 💾 Save and resume, works offline
 
-            ### विशेषताहरू
-            - 🎲 क्लासिक लुडो खेल
-            - 🤖 AI प्रतिद्वन्द्वी (सजिलो / सामान्य / गाह्रो)
-            - 👥 स्थानीय बहु-खेलाडी
-            - 🇳🇵 नेपाली भाषामा सम्पूर्ण UI
-            - 😂 नेपाली प्रतिक्रियाहरू
-            - 🔊 आवाज प्रभावहरू (कस्टम आवाज छान्न सकिने)
-            - 🏆 तथ्याङ्क र उपलब्धिहरू
-            - 💾 खेल बचत/पुनः सुरु
-            - 📱 अफलाइन समर्थन
-
-            ### APK डाउनलोड गर्नुहोस्
-            तलको APK फाइल डाउनलोड गरेर आफ्नो Android फोनमा स्थापना गर्नुहोस्।
-
-            > **ध्यान दिनुहोस्:** "Unknown sources" बाट स्थापना अनुमति दिनु पर्न सक्छ।
-          files: "Nepali-Ludo-*.apk"
+            ### Install
+            1. Download the APK below
+            2. Open it on your Android phone
+            3. Allow installing from unknown sources if asked
+            4. If an older version is installed, uninstall it first
+          files: "Ludo-Pro-*.apk"
           draft: false
           # beta / alpha / rc tags become pre-releases automatically
           prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}

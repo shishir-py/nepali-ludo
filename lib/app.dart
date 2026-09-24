@@ -42,7 +42,7 @@ class _NepaliLudoAppState extends State<NepaliLudoApp>
     return ChangeNotifierProvider(
       create: (_) => GameProvider(),
       child: MaterialApp(
-        title: 'Nepali Ludo',
+        title: 'Ludo Pro',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         home: const SplashScreen(),

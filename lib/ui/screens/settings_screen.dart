@@ -159,7 +159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _infoTile(
             icon: Icons.info_outline_rounded,
             title: S.about,
-            subtitle: 'Nepali Ludo v1.0.0',
+            subtitle: 'Ludo Pro v1.0.0',
             onTap: _showAboutDialog,
           ),
           _infoTile(
@@ -315,7 +315,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       applicationIcon: const Text('🎲', style: TextStyle(fontSize: 48)),
       children: [
         const Text(
-          'Nepali Ludo is a classic Ludo game with a Nepali-inspired look.\n\n'
+          'Ludo Pro is a classic Ludo game with a Himalayan-inspired look.\n\n'
           'It works fully offline.\n\n'
           'GitHub: github.com/nepali-ludo',
         ),
