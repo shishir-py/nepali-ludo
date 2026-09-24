@@ -27,7 +27,11 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   final List<PlayerType> _types = List.filled(4, PlayerType.human);
   final List<AiDifficulty> _difficulties = List.filled(4, AiDifficulty.normal);
 
-  static const _colorNames = ['Red 🔴', 'Green 🟢', 'Yellow 🟡', 'Blue 🔵'];
+  /// Colour seat chosen by each player slot. Always a permutation of
+  /// 0-3 (red, green, yellow, blue) so two players never share a colour.
+  final List<int> _colors = [0, 1, 2, 3];
+
+  static const _colorNames = ['Red', 'Green', 'Yellow', 'Blue'];
   static const _defaultNames = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
   @override
@@ -135,12 +139,13 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   }
 
   Widget _buildPlayerCard(int index) {
-    final color = NepaliColors.playerColor(index);
+    final color = NepaliColors.playerColor(_colors[index]);
+    final isAi = _types[index] == PlayerType.ai;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withValues(alpha: 0.5), width: 1.5),
+        side: BorderSide(color: color, width: 2),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -149,35 +154,35 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
           children: [
             Row(
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 10),
                 Text(
-                  _colorNames[index],
+                  'Player ${index + 1}',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 16),
                 ),
+                const Spacer(),
+                _buildColorPicker(index),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             TextField(
               controller: _nameControllers[index],
+              textAlignVertical: TextAlignVertical.center,
               decoration: InputDecoration(
                 labelText: S.playerName,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: color, width: 2),
+                ),
+                isDense: true,
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                prefixIcon: Text(
-                  _types[index] == PlayerType.ai ? '🤖' : '👤',
-                  style: const TextStyle(fontSize: 20),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                // A real icon, sized and centred by the input decorator.
+                prefixIcon: Icon(
+                  isAi ? Icons.smart_toy_rounded : Icons.person_rounded,
+                  color: color,
                 ),
               ),
             ),
@@ -186,8 +191,13 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
             SegmentedButton<PlayerType>(
               segments: const [
                 ButtonSegment(
-                    value: PlayerType.human, label: Text('👤 Human')),
-                ButtonSegment(value: PlayerType.ai, label: Text('🤖 AI')),
+                    value: PlayerType.human,
+                    icon: Icon(Icons.person_rounded),
+                    label: Text('Human')),
+                ButtonSegment(
+                    value: PlayerType.ai,
+                    icon: Icon(Icons.smart_toy_rounded),
+                    label: Text('AI')),
               ],
               selected: {_types[index]},
               onSelectionChanged: (s) {
@@ -200,13 +210,65 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                 });
               },
             ),
-            if (_types[index] == PlayerType.ai) ...[
+            if (isAi) ...[
               const SizedBox(height: 10),
               _buildDifficultySelector(index),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  /// Four colour dots. Picking a colour another player already has swaps
+  /// the two players' colours, so every player always has a unique colour.
+  Widget _buildColorPicker(int index) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(4, (c) {
+        final selected = _colors[index] == c;
+        final ownerSlot = _colors.indexOf(c);
+        final takenByOther =
+            !selected && ownerSlot >= 0 && ownerSlot < _playerCount;
+        return Tooltip(
+          message: _colorNames[c],
+          child: GestureDetector(
+            onTap: () => setState(() {
+              final other = _colors.indexOf(c);
+              _colors[other] = _colors[index];
+              _colors[index] = c;
+            }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              margin: const EdgeInsets.only(left: 8),
+              width: selected ? 34 : 28,
+              height: selected ? 34 : 28,
+              decoration: BoxDecoration(
+                color: NepaliColors.playerColor(c)
+                    .withValues(alpha: takenByOther ? 0.35 : 1),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? NepaliColors.textPrimary : Colors.white,
+                  width: selected ? 3 : 2,
+                ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: NepaliColors.playerColor(c)
+                              .withValues(alpha: 0.6),
+                          blurRadius: 8,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: selected
+                  ? const Icon(Icons.check_rounded,
+                      size: 18, color: Colors.white)
+                  : null,
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -225,14 +287,16 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   void _startGame() {
     final players = List.generate(_playerCount, (i) {
       return Player(
-        index: i,
+        index: _colors[i], // board seat = chosen colour
         name: _nameControllers[i].text.trim().isEmpty
             ? _defaultNames[i]
             : _nameControllers[i].text.trim(),
         type: _types[i],
         difficulty: _difficulties[i],
       );
-    });
+    })
+      // Turn order goes clockwise around the board: red, green, yellow, blue.
+      ..sort((a, b) => a.index.compareTo(b.index));
 
     final provider = context.read<GameProvider>();
     provider.startNewGame(players: players);

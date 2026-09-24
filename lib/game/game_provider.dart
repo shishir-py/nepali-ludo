@@ -165,7 +165,8 @@ class GameProvider extends ChangeNotifier {
   /// (captures, extra turns, wins, …).
   Future<void> _animateAndMove(int playerIndex, Token token) async {
     _isTokenMoving = true;
-    final key = '$playerIndex:${token.id}';
+    // Board keys use the colour seat, not the turn-order index.
+    final key = '${state!.players[playerIndex].index}:${token.id}';
     final dice = state!.lastDiceValue;
     final from = token.position;
 

@@ -220,9 +220,12 @@ class GameEngine {
 
   /// Returns the global main-track index for a token at [localPos].
   /// Returns null if the token is in yard, home column, or finished.
+  ///
+  /// [playerIndex] is the position in the turn order; the board seat
+  /// (colour) is `players[playerIndex].index`, which players may choose.
   int? globalTrackIndex(int playerIndex, int localPos) {
     if (localPos < 0 || localPos > 51) return null;
-    return BoardConfig.localToGlobal(playerIndex, localPos);
+    return BoardConfig.localToGlobal(state.players[playerIndex].index, localPos);
   }
 
   // ─────────────────────────────────────────────────────────────

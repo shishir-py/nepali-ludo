@@ -108,7 +108,7 @@ class AiEngine {
 
     // Prefer safe cells.
     if (newPos <= 51) {
-      final globalNew = BoardConfig.localToGlobal(playerIndex, newPos);
+      final globalNew = BoardConfig.localToGlobal(engine.state.players[playerIndex].index, newPos);
       if (BoardConfig.isGlobalSafe(globalNew)) score += 20;
     }
 
@@ -126,14 +126,14 @@ class AiEngine {
     final newPos = token.isInYard ? 0 : token.position + diceValue;
     if (newPos < 0 || newPos > 51) return false;
 
-    final globalNew = BoardConfig.localToGlobal(playerIndex, newPos);
+    final globalNew = BoardConfig.localToGlobal(engine.state.players[playerIndex].index, newPos);
     if (BoardConfig.isGlobalSafe(globalNew)) return false;
 
     for (int pi = 0; pi < engine.state.players.length; pi++) {
       if (pi == playerIndex) continue;
       for (final t in engine.state.players[pi].tokens) {
         if (t.isInYard || t.isFinished || t.isInHomeColumn) continue;
-        final opGlobal = BoardConfig.localToGlobal(pi, t.position);
+        final opGlobal = BoardConfig.localToGlobal(engine.state.players[pi].index, t.position);
         if (opGlobal == globalNew) return true;
       }
     }
@@ -142,7 +142,7 @@ class AiEngine {
 
   bool _isInDanger(GameEngine engine, int playerIndex, int localPos) {
     if (localPos < 0 || localPos > 51) return false;
-    final globalPos = BoardConfig.localToGlobal(playerIndex, localPos);
+    final globalPos = BoardConfig.localToGlobal(engine.state.players[playerIndex].index, localPos);
     if (BoardConfig.isGlobalSafe(globalPos)) return false;
 
     for (int pi = 0; pi < engine.state.players.length; pi++) {
@@ -153,7 +153,7 @@ class AiEngine {
         for (int dice = 1; dice <= 6; dice++) {
           final opponentNext = t.position + dice;
           if (opponentNext <= 51) {
-            final opGlobal = BoardConfig.localToGlobal(pi, opponentNext);
+            final opGlobal = BoardConfig.localToGlobal(engine.state.players[pi].index, opponentNext);
             if (opGlobal == globalPos) return true;
           }
         }

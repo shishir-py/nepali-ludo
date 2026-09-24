@@ -68,7 +68,7 @@ class _GameScreenState extends State<GameScreen> {
                                 horizontal: 6, vertical: 4),
                             child: BoardView(
                               players: state.players,
-                              currentPlayerIndex: state.currentPlayerIndex,
+                              currentPlayerIndex: state.currentPlayer.index,
                               movableTokenIds: game.movableTokenIds,
                               positionOverrides: game.positionOverrides,
                               tilted: _tilted,
@@ -76,7 +76,7 @@ class _GameScreenState extends State<GameScreen> {
                             ),
                           ),
                         ),
-                        if (state.players.length > 2)
+                        if (state.players.any((p) => p.index >= 2))
                           _buildPlayersRow(state, game, [3, 2]),
                         _buildControlBar(context, state, game),
                       ],
@@ -168,15 +168,16 @@ class _GameScreenState extends State<GameScreen> {
 
   // ─── Player cards ────────────────────────────────────────────────────
 
+  /// A row of player cards for the given colour seats, placed next to
+  /// their yards (red/green on top, blue/yellow at the bottom).
   Widget _buildPlayersRow(
-      GameState state, GameProvider game, List<int> indices) {
+      GameState state, GameProvider game, List<int> seats) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: Row(
-        children: indices.map((i) {
-          if (i >= state.players.length) {
-            return const Expanded(child: SizedBox());
-          }
+        children: seats.map((seat) {
+          final i = state.players.indexWhere((p) => p.index == seat);
+          if (i < 0) return const Expanded(child: SizedBox());
           return Expanded(child: _buildPlayerCard(state, game, i));
         }).toList(),
       ),
@@ -550,7 +551,7 @@ class _GameScreenState extends State<GameScreen> {
           AudioManager().playReaction();
           setState(() {
             _activeReaction = reaction;
-            _reactionPlayer = state.currentPlayerIndex;
+            _reactionPlayer = state.currentPlayer.index;
           });
           Future.delayed(const Duration(seconds: 3), () {
             if (mounted) setState(() => _activeReaction = null);
